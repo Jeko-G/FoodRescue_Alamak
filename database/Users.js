@@ -6,51 +6,42 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true
   },
-  full_name: {
-    type: String
-  },
+  full_name: String,
   email: {
     type: String,
     required: true,
     unique: true,
     lowercase: true,
-    trim: true
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, "Email tidak valid"]
   },
   username: {
     type: String,
-    trim: true
+    trim: true,
+    unique: true,
+    sparse: true
   },
   password: {
     type: String,
     required: true
   },
-  address: {
-    type: String
-  },
-  birthdate: {
-    type: Date
-  },
-  current_employment: {
-    type: String
-  },
+  address: String,
+  birthdate: Date,
+  current_employment: String,
   salary: {
-    type: Number
+    type: Number,
+    default: 0
   },
   marriage_status: {
-    type: String
-  },
-  created_at: {
-    type: Date,
-    required: true
-  },
-  updated_at: {
-    type: Date,
-    required: true
+    type: String,
+    default: "Single"
+  }
+}, {
+  timestamps: {
+    createdAt: "created_at",
+    updatedAt: "updated_at"
   }
 });
-
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ NIK: 1 }, { unique: true, sparse: true });
 
 const Users = mongoose.model("Users", userSchema);
 
