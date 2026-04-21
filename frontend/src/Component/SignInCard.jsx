@@ -10,7 +10,7 @@ class SignInCard extends React.Component {
         const userInput = document.getElementById("user_input").value;
         const passwordInput = document.getElementById("password_input").value;
 
-        const response = await fetch("/api/users/", {
+        const response = await fetch("/api/users/login", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -35,11 +35,11 @@ class SignInCard extends React.Component {
                 <div className="container-fluid h-100 w-100 d-flex flex-column align-items-start justify-content-center">
                     
                     <h1>Sign In</h1>
-                    <form className="d-flex flex-column align-items-start justify-content-center gap-3 w-100">
+                    <div className="d-flex flex-column align-items-start justify-content-center gap-3 w-100">
                         <input type="text" className="form-control" placeholder="Username or Email" id="user_input" />
                         <input type="password" className="form-control" placeholder="Password" id="password_input" />
-                        <button type="submit" className="btn btn-primary">Sign In</button>
-                    </form>
+                        <button type="submit" className="btn btn-primary" onClick={this.getUser}>Sign In</button>
+                    </div>
 
                 </div>
             </>

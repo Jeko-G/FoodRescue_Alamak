@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import connectDB from "./config/connect_db.js";
 import userRoutes from "./routes/userRoutes.js";
 
@@ -7,8 +8,11 @@ dotenv.config();
 
 const app = express();
 
-app.use(express.json());
 
+app.use(express.json());
+app.use(cors({
+    origin: "http://localhost:3001"
+}))
 // 🔥 CONNECT KE DATABASE
 connectDB();
 

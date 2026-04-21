@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 
 export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, full_name } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -22,6 +22,7 @@ export const register = async (req, res) => {
 
     const user = new Users({
       email: normalizedEmail,
+      username: req.body.username,
       password: password
     });
 
