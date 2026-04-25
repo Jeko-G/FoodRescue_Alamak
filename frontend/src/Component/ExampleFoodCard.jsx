@@ -1,5 +1,5 @@
 import React from "react";
-import BadgeGreen from "./Small/BadgeGreen";
+import BadgeGreen from "./BadgeGreen";
 
 class ExampleFoodCard extends React.Component {
     constructor(props){

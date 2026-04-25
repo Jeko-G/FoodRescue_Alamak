@@ -1,5 +1,5 @@
 import React from "react";
-import FeatureListCard from "../Component/Small/FeatureListCard";
+import FeatureListCard from "../Component/FeatureListCard";
 import ExampleFoodCard from "../Component/ExampleFoodCard";
 
 class LandingPage extends React.Component{

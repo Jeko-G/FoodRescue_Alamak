@@ -1,10 +1,9 @@
-const NotificationSchema = new Schema({
-  user_id: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
+const mongoose = require('mongoose');
 
+const { Schema } = mongoose;
+
+const NotificationSchema = new Schema({
+  user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   type: {
     type: String,
     enum: [
@@ -16,57 +15,33 @@ const NotificationSchema = new Schema({
       'new_message',
       'new_rating',
       'report_received',
-      'achievement_unlocked'
+      'achievement_unlocked',
     ],
-    required: true
+    required: true,
   },
-
-  title: {
-    type: String,
-    required: true
-  },
-
-  body: {
-    type: String
-  },
-
+  title: { type: String, required: true },
+  body: { type: String },
   reference_type: {
     type: String,
-    enum: ['donation', 'claim', 'message']
+    enum: ['donation', 'claim', 'message'],
   },
-
   reference_id: {
     type: Schema.Types.ObjectId,
-    required: function () {
-      return !!this.reference_type;
-    }
+    required: function () { return !!this.reference_type; },
   },
-
-  is_read: {
-    type: Boolean,
-    default: false
-  },
-
-  read_at: {
-    type: Date
-  },
-
+  is_read: { type: Boolean, default: false },
+  read_at: { type: Date },
   expires_at: {
     type: Date,
-    default: () => {
-      const days90 = 90 * 24 * 60 * 60 * 1000;
-      return new Date(Date.now() + days90);
-    }
-  }
+    default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+  },
 }, {
-  timestamps: { createdAt: 'created_at' }
+  timestamps: { createdAt: 'created_at' },
 });
 
-// Index
 NotificationSchema.index({ user_id: 1, is_read: 1, created_at: -1 });
 NotificationSchema.index({ user_id: 1, is_read: 1 });
 NotificationSchema.index({ user_id: 1, type: 1 });
 NotificationSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
 
-
-export default mongoose.model('Notification', NotificationSchema);
+module.exports = mongoose.model('Notification', NotificationSchema);
