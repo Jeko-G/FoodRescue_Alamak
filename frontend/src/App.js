@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { AuthProvider, useAuth } from './Context/AuthContext';
 
 import './index.css';
+import 'leaflet/dist/leaflet.css';
 
 // FIXED IMPORT
 import SignInPage from './Page/SignInPage';

@@ -79,6 +79,9 @@ function MapPicker({ lat, lng, onChange, onAddress, searchQuery }) {
         markerRef.current.setLatLng(latlng);
         mapRef.current.setView(latlng, 16);
         onChange({ lat: result.lat, lng: result.lng });
+        setTimeout(() => {
+          mapRef.current.invalidateSize();
+        }, 200);
       }
     }, 800);
   }, [searchQuery]);
@@ -91,6 +94,12 @@ function MapPicker({ lat, lng, onChange, onAddress, searchQuery }) {
 
     const map = L.map(containerRef.current).setView([defaultLat, defaultLng], 13);
     mapRef.current = map;
+
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+      });
+    }, 200);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
@@ -116,9 +125,28 @@ function MapPicker({ lat, lng, onChange, onAddress, searchQuery }) {
     };
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div>
-      <div ref={containerRef} style={{ height: '300px', borderRadius: '8px', zIndex: 0 }}></div>
+      <div
+        ref={containerRef}
+        style={{
+          height: '300px',
+          width: '100%', // 🔥 FIX 3: WAJIB
+          borderRadius: '8px',
+          zIndex: 0
+        }}
+      />
       <small className="text-muted mt-1 d-block">
         <i className="bi bi-info-circle me-1"></i>
         Klik / drag marker → alamat otomatis terisi. Ketik alamat → peta otomatis bergerak.

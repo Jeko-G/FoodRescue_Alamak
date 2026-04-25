@@ -270,6 +270,18 @@ code {
   background-size:64px 64px;
 }
 
+.no-grid::before {
+  display: none !important;
+}
+
+.custom-tooltip {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: white;
+  border: 1px solid #ccc;
+}
+
 /* Define the fade-in animation */
 @keyframes fadeIn {
   from {

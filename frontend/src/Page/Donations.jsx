@@ -38,11 +38,25 @@ function Donations() {
 
     // Coba dengan IP-based geolocation sebagai fallback
     const tryGetLocation = () => {
-      navigator.geolocation?.getCurrentPosition(
-        pos => {
-          setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          setLocationLoading(false);
-        },
+    navigator.geolocation?.getCurrentPosition(
+      pos => {
+        const { latitude, longitude, accuracy } = pos.coords;
+
+        console.log("Akurasi:", accuracy);
+
+        setUserPos({
+          lat: latitude,
+          lng: longitude,
+          accuracy: accuracy, // 🔥 TAMBAHAN
+        });
+
+        setLocationLoading(false);
+
+        // 🔥 warning kalau tidak akurat
+        if (accuracy > 100) {
+          console.warn("Lokasi kurang akurat:", accuracy, "meter");
+        }
+      },
         err => {
           // Fallback pakai IP geolocation gratis
           fetch('https://ipapi.co/json/')
@@ -61,7 +75,7 @@ function Donations() {
               setLocationLoading(false);
             });
         },
-        { enableHighAccuracy: false, timeout: 30000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     };
 
@@ -116,13 +130,14 @@ const filteredDonations = donations.filter(d => {
   return (
     <div className="container-fluid py-4">
       <div className="row g-0" style={{ height: 'calc(100vh - 80px)' }}>
-
         {/* Kiri — Peta */}
-        <div className="col-md-5 pe-3" style={{ position: 'sticky', top: '80px', height: 'calc(100vh - 80px)' }}>
+        <div className="col-md-5 pe-3 d-flex flex-column" style={{ height: 'calc(100vh - 80px)' }}>
           <h5 className="fw-bold mb-2">
             <i className="bi bi-map text-primary me-2"></i>Peta Donasi
           </h5>
+        <div style={{ flex: 1, minHeight: 0}}>
           <MapView donations={filteredDonations} userPos={userPos} />
+        </div>
 
           {/* Slider Radius */}
           <div className="card p-3 mt-3">
@@ -145,8 +160,20 @@ const filteredDonations = donations.filter(d => {
                   setLocationError('');
                   navigator.geolocation?.getCurrentPosition(
                     pos => {
-                      setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                      const { latitude, longitude, accuracy } = pos.coords;
+
+                      setUserPos({
+                        lat: latitude,
+                        lng: longitude,
+                        accuracy: accuracy, // 🔥 TAMBAHAN
+                      });
+
                       setLocationLoading(false);
+
+                      // 🔥 kasih warning kalau jelek
+                      if (accuracy > 100) {
+                        alert("Lokasi kurang akurat (" + accuracy + " meter)");
+                      }
                     },
                     () => {
                       fetch('https://ipapi.co/json/')
@@ -164,7 +191,7 @@ const filteredDonations = donations.filter(d => {
                           setLocationLoading(false);
                         });
                     },
-                    { enableHighAccuracy: false, timeout: 30000, maximumAge: 60000 }
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                   );
                 }}>
                 <i className="bi bi-crosshair me-1"></i>Deteksi Lokasi Saya
