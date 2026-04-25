@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import api from '../utils/api';
-import MapPicker from '../components/MapPicker';
+import MapPicker from '../Component/MapPicker';
 
 function CreateDonation() {
   const navigate = useNavigate();

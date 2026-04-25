@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import api from '../utils/api';
-import MapView from '../components/MapView';
+import MapView from '../Component/MapView';
 
 function Donations() {
   const [donations, setDonations] = useState([]);

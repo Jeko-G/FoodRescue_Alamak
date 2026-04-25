@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { AuthProvider, useAuth } from './Context/AuthContext';
 
 import './index.css';
@@ -43,28 +43,29 @@ function ProviderRoute({ children }) {
 function AppRoutes() {
   return (
     <>
+      <Routes>
         <Route path="/" element={<MainLayout />}>
             <Route index element={<LandingPage />} />
 
-            <Route path="/donations" element={<Donations />} />
-            <Route path="/donations/:id" element={<DonationDetail />} />
+            <Route path="donations" element={<Donations />} />
+            <Route path="donations/:id" element={<DonationDetail />} />
 
-            <Route path="/donations/create" element={
+            <Route path="donations/create" element={
             <PrivateRoute><ProviderRoute><CreateDonation /></ProviderRoute></PrivateRoute>
             } />
-            <Route path="/profile" element={
+            <Route path="profile" element={
             <PrivateRoute><Profile /></PrivateRoute>
             } />
-            <Route path="/history" element={
+            <Route path="history" element={
             <PrivateRoute><History /></PrivateRoute>
             } />
-            <Route path="/messages" element={
+            <Route path="messages" element={
             <PrivateRoute><Messages /></PrivateRoute>
             } />
-            <Route path="/community" element={
+            <Route path="community" element={
             <PrivateRoute><Community /></PrivateRoute>
             } />
-            <Route path="/admin" element={
+            <Route path="admin" element={
             <AdminRoute><Admin /></AdminRoute>
             } />
 
@@ -75,6 +76,7 @@ function AppRoutes() {
         <Route path="/register" element={<RegisterPage />} />
 
         <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </>
   );
 }

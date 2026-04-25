@@ -1,4 +1,5 @@
 import { useNavigate, useLocation, useParams } from "react-router";
+import { useAuth } from "../Context/AuthContext";
 
 export function withRouter(Component) {
   return function WrappedComponent(props) {
