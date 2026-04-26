@@ -111,6 +111,7 @@ code {
 
 ::-webkit-scrollbar {
   width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -1121,4 +1122,13 @@ input[type="file"]::file-selector-button:hover {
 
 .custom-range::-webkit-slider-thumb:hover {
   background: var(--g1);
+}
+
+.table-green thead th {
+  background-color: var(--txt4) !important;
+  color: var(--txt) !important;
+}
+.table-green tbody td {
+  background-color: var(--g5) !important;
+  color: var(--txt) !important;
 }
