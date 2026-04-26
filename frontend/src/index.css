@@ -623,14 +623,6 @@ input[type="file"]::file-selector-button:hover {
 
 /* ABOUT US */
 
-/* ============================================================
-   ABOUT US — tambahan untuk index.css
-   Paste di bagian paling bawah index.css
-   ============================================================ */
-
-
-/* ── Hero ───────────────────────────────────────────── */
-
 .about-hero {
   background: linear-gradient(155deg, #2e5220 0%, var(--g1) 45%, var(--cr2) 100%);
   padding: 72px 0 60px;
