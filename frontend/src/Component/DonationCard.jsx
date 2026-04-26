@@ -28,7 +28,7 @@ class DonationCard extends React.Component {
       deadline - new Date() < 24 * 60 * 60 * 1000;
 
     return (
-      <div className="card h-100 shadow-sm">
+      <div className="card h-100" style={{backgroundColor:" var(--surface)", border: "1px solid var(--border)", boxShadow:"var(--shadow)",maxWidth: "900px"}}>
         {donation.photo ? (
           <img
             src={donation.photo}

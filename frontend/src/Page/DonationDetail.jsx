@@ -191,7 +191,7 @@ function DonationDetail() {
 
   return (
     <div className="container py-4">
-      <button className="btn btn-outline-secondary mb-3" onClick={() => navigate(-1)}>
+      <button className="position-relative btn btn-outline-green mb-3" onClick={() => navigate(-1)}>
         <i className="bi bi-arrow-left me-1"></i>Kembali
       </button>
 

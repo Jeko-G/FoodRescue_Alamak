@@ -223,7 +223,7 @@ const filteredDonations = donations.filter(d => {
         </div>
 
         {/* Kanan — Filter + List */}
-        <div className="col-md-7 mt-3 mt-md-0" style={{ overflowY: 'auto', height: 'calc(100vh - 80px)' }}>
+        <div className="col-md-7 mt-3 mt-md-0" style={{ overflowY: 'auto', overflowX:'auto', height: 'calc(100vh - 80px)' }}>
           <h5 className="mb-2 text-green1 syne-h1">
             <i className="bi bi-basket2 me-2"></i>
             Donasi Tersedia
@@ -295,7 +295,7 @@ const filteredDonations = donations.filter(d => {
             <div className="row g-3">
               {filteredDonations.map(d => (
                 <div className="col-md-6" key={d._id}>
-                  <div className="card h-100">
+                  <div className="card h-100 outfit" style={{backgroundColor:" var(--surface)", border: "1px solid var(--border)", boxShadow:"var(--shadow)",maxWidth: "900px"}}>
                     {d.photos?.length > 0 ? (
                       <img src={`/uploads/${d.photos[0].photo_url}`}
                         className="card-img-top" alt={d.title}
@@ -308,7 +308,7 @@ const filteredDonations = donations.filter(d => {
                     )}
                     <div className="card-body d-flex flex-column p-2">
                       <div className="d-flex justify-content-between align-items-start mb-1">
-                        <h6 className="fw-bold mb-0 small">{d.title}</h6>
+                        <h6 className="fw-bold text-green1 mb-0 small">{d.title}</h6>
                         {getStatusBadge(d.status)}
                       </div>
                       <div className="mt-auto">
@@ -320,15 +320,15 @@ const filteredDonations = donations.filter(d => {
                           )}
                           {d.is_halal && <span className="badge bg-success" style={{ fontSize: '0.65rem' }}>✅ Halal</span>}
                         </div>
-                        <div className="small text-muted mb-1">
+                        <div className="small text-green3 mb-1">
                           <i className="bi bi-box me-1"></i>
                           {d.quantity_remaining}/{d.quantity} {d.quantity_unit}
                         </div>
-                        <div className="small text-muted mb-1">
+                        <div className="small text-green3 mb-1">
                           <i className="bi bi-geo-alt me-1"></i>{d.pickup_city}
                         </div>
                         {d.pickup_start_time && (
-                          <div className="small text-muted mb-1">
+                          <div className="small text-green3 mb-1">
                             <i className="bi bi-clock me-1"></i>
                             {d.pickup_start_time} - {d.pickup_end_time}
                           </div>
@@ -345,14 +345,14 @@ const filteredDonations = donations.filter(d => {
                             ).toFixed(1)} km dari kamu
                           </div>
                         )}
-                        <div className="small text-muted mb-2">
+                        <div className="small text-green2 mb-2">
                           <i className="bi bi-person me-1"></i>
                           {d.provider_id?.first_name} {d.provider_id?.last_name}
                           <span className="text-warning ms-1">
                             ★ {d.provider_id?.trust_score?.toFixed(1) || '5.0'}
                           </span>
                         </div>
-                        <Link to={`/donations/${d._id}`} className="btn btn-primary btn-sm w-100">
+                        <Link to={`/donations/${d._id}`} className="btn btn-outline-green btn-sm w-100">
                           Lihat Detail
                         </Link>
                       </div>

@@ -14,10 +14,14 @@ class NavBar extends React.Component {
         localStorage.setItem("theme", currentTheme);
     }
 
-    handleLogout() {
-        this.props.auth.logout();
+    handleLogout = () => {
+        this.props.auth?.logout();
         this.props.navigate('/login');
     }
+
+    // get isProvider() {
+    //     this.props.auth.user?.role === "food_provider"
+    // }
 
     componentDidMount() {
         const savedTheme = localStorage.getItem("theme");
@@ -27,7 +31,7 @@ class NavBar extends React.Component {
     }
 
     render() {
-        const isProvider = this.props.auth.user?.role === "foodprovider";
+        const isProvider = this.props.auth.user?.role === "food_provider";
 
         return(
             <>
@@ -52,23 +56,23 @@ class NavBar extends React.Component {
 
                             {this.props.auth.user && (
                                 <>
-                                    <Link className="btn-light-green py-2 px-3 rounded-2" to="/donations">
+                                    <Link className="btn-light-green py-2 px-3 rounded-2" to="/history">
                                         <i className="d-inline d-md-none bi bi-clock-history"></i>
                                         <p className="d-none d-md-inline">Riwayat</p>
                                     </Link>
 
-                                    <Link className="btn-light-green py-2 px-3 rounded-2" to="/donations">
+                                    <Link className="btn-light-green py-2 px-3 rounded-2" to="/messages">
                                         <i className="d-inline d-md-none bi bi-chat-dots"></i>
                                         <p className="d-none d-md-inline">Pesan</p>
                                     </Link>
 
-                                    <Link className="btn-light-green py-2 px-3 rounded-2" to="/donations">
+                                    <Link className="btn-light-green py-2 px-3 rounded-2" to="/community">
                                         <i className="d-inline d-md-none bi bi-people"></i>
                                         <p className="d-none d-md-inline">Komunitas</p>
                                     </Link>
 
                                     {this.props.auth.user.role === "admin" && (
-                                        <Link className="btn-light-green py-2 px-3 rounded-2" to="/donations">
+                                        <Link className="btn-light-green py-2 px-3 rounded-2" to="/admin">
                                             <p className="">Admin</p>
                                         </Link>
                                     )}
@@ -83,13 +87,13 @@ class NavBar extends React.Component {
                             <>
                                 {
                                     isProvider && (
-                                        <Link className="btn-light-green py-2 px-3 rounded-2" to="/donations">
+                                        <Link className="btn-light-green py-2 px-3 rounded-2" to="/donations/create">
                                             <i className="d-inline d-md-none bi bi-plus-circle"></i>
                                             <p className="d-none d-md-inline">Buat Donasi</p>
                                         </Link>
                                     )
                                 }
-                                <Link className="d-flex flex-wrap gap-2" to="/profile">
+                                <Link className="d-flex flex-wrap gap-2 text-decoration-none text-green1" to="/profile">
                                     <i className="bi bi-person-circle me-1"></i>
                                         <p>{this.props.auth.user.first_name} {this.props.auth.user.last_name}</p>
 
@@ -99,7 +103,7 @@ class NavBar extends React.Component {
                                             }
                                         </span>
                                 </Link>
-                                <button className="btn-green-gradient btn-sm fw-semibold" onClick={this.handleLogout}>
+                                <button className="btn-green-gradient btn-sm fw-semibold rounded-3" onClick={this.handleLogout} style={{fontSize:"small"}}>
                                     Logout
                                 </button>
                             </>
