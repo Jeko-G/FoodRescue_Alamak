@@ -1,4 +1,6 @@
 import React from "react";
+import api from "../utils/api";
+import { Navigate } from "react-router-dom";
 
 class SignInPage extends React.Component {
   constructor(props) {
@@ -13,6 +15,7 @@ class SignInPage extends React.Component {
       passwordError: "",
       passwordTouched: false,
       showPassword: false,
+      redirect: false,
     };
   }
 
@@ -93,26 +96,22 @@ class SignInPage extends React.Component {
     this.setState({ showPassword: !this.state.showPassword });
 
   async getUser() {
-    const userInput = this.state.email;
-    const passwordInput = this.state.password;
+    const email = this.state.email.trim().toLowerCase();
+    const password = this.state.password;
 
-    const response = await fetch("/api/users/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user: userInput,
-        password: passwordInput,
-      }),
-    });
-    const data = await response.json();
+    try {
+      const res = await api.post("/auth/login", {
+        email,
+        password,
+      });
 
-    if (data.user) {
-      alert("Login Berhasil!");
-    } else {
+      localStorage.setItem("token", res.data.token);
+      this.setState({ redirect: true });
+    } catch (err) {
+      console.log("LOGIN ERROR:", err.response || err);
+
       this.setState({
-        loginError: "Email atau Password salah",
+        loginError: err.response?.data?.msg || "Login gagal",
       });
     }
   }
@@ -125,6 +124,9 @@ class SignInPage extends React.Component {
   }
 
   render() {
+    if (this.state.redirect) {
+      return <Navigate to="/" />;
+    }
     return (
       <>
         <div className="w-100 min-vh-100 h-100 d-flex flex-row">
@@ -263,7 +265,7 @@ class SignInPage extends React.Component {
                   />
                   <label
                     className="form-check-label outfit text-green3"
-                    for="checkDefault"
+                    htmlFor="checkDefault"
                   >
                     Ingat saya
                   </label>

@@ -1,14 +1,14 @@
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: '/api'
+  baseURL: "http://localhost:5000/api",
 });
 
 // Otomatis tambahin token di setiap request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (token) {
-    console.log('Token length:', token.length);
+    console.log("Token length:", token.length);
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
