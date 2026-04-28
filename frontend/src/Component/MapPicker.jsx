@@ -239,33 +239,47 @@ function MapPicker({ lat, lng, onChange, onAddress, searchQuery }) {
 
   useEffect(() => {
     if (mapRef.current) return;
-    const map = L.map(containerRef.current, { zoomControl: false }).setView(
-      [lat || 3.5952, lng || 98.6722],
-      13,
-    );
-    mapRef.current = map;
-    setTimeout(() => requestAnimationFrame(() => map.invalidateSize()), 200);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(map);
-    const marker = L.marker([lat || 3.5952, lng || 98.6722], {
-      draggable: true,
-      icon: L.divIcon({
-        html: pickupPinHTML,
-        className: "",
-        iconSize: [32, 40],
-        iconAnchor: [16, 40],
-      }),
-    }).addTo(map);
-    markerRef.current = marker;
-    marker.bindPopup("📦 Lokasi pickup").openPopup();
-    marker.on("dragend", () => handleLocationChange(marker.getLatLng()));
-    map.on("click", (e) => {
-      marker.setLatLng(e.latlng);
-      handleLocationChange(e.latlng);
-    });
+    const init = () => {
+      if (!containerRef.current) return;
+      const { offsetWidth, offsetHeight } = containerRef.current;
+      if (!offsetWidth || !offsetHeight) {
+        requestAnimationFrame(init);
+        return;
+      }
+
+      const map = L.map(containerRef.current, { zoomControl: false }).setView(
+        [lat || 3.5952, lng || 98.6722],
+        13,
+      );
+      mapRef.current = map;
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      const marker = L.marker([lat || 3.5952, lng || 98.6722], {
+        draggable: true,
+        icon: L.divIcon({
+          html: pickupPinHTML,
+          className: "",
+          iconSize: [32, 40],
+          iconAnchor: [16, 40],
+        }),
+      }).addTo(map);
+      markerRef.current = marker;
+      marker.bindPopup("📦 Lokasi pickup").openPopup();
+      marker.on("dragend", () => handleLocationChange(marker.getLatLng()));
+      map.on("click", (e) => {
+        marker.setLatLng(e.latlng);
+        handleLocationChange(e.latlng);
+      });
+      setTimeout(() => map.invalidateSize(), 100);
+    };
+
+    requestAnimationFrame(init);
+
     return () => {
-      map.remove();
+      mapRef.current?.remove();
       mapRef.current = null;
     };
   }, []);

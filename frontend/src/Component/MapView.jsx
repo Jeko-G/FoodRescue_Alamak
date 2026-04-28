@@ -86,21 +86,33 @@ function MapView({ donations, userPos }) {
     if (mapRef.current) return;
     injectMapStyles();
 
-    const map = L.map(containerRef.current, { zoomControl: false }).setView(
-      [3.5952, 98.6722],
-      12,
-    );
-    mapRef.current = map;
-    setTimeout(() => map.invalidateSize(), 300);
+    const init = () => {
+      if (
+        !containerRef.current?.offsetWidth ||
+        !containerRef.current?.offsetHeight
+      ) {
+        requestAnimationFrame(init);
+        return;
+      }
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(map);
+      const map = L.map(containerRef.current, { zoomControl: false }).setView(
+        [3.5952, 98.6722],
+        12,
+      );
+      mapRef.current = map;
+      setTimeout(() => map.invalidateSize(), 100);
 
-    L.control.zoom({ position: "bottomright" }).addTo(map);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+    };
+
+    requestAnimationFrame(init);
 
     return () => {
-      map.remove();
+      mapRef.current?.remove();
       mapRef.current = null;
     };
   }, []);
