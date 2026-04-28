@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { withRouter } from "../Wrapper/withRouter";
 
 const navLinks = [
+  { to: "/home", icon: "bi-house", label: "Beranda", auth: false },
   { to: "/donations", icon: "bi-box-seam", label: "Donasi", auth: false },
   { to: "/history", icon: "bi-clock-history", label: "Riwayat", auth: true },
   { to: "/messages", icon: "bi-chat-dots", label: "Pesan", auth: true },
@@ -28,13 +29,14 @@ const NavLink = ({ to, icon, label, location }) => {
         transition: "color 0.2s",
         whiteSpace: "nowrap",
       }}
-      onMouseEnter={e => {
+      onMouseEnter={(e) => {
         e.currentTarget.style.color = "var(--g1)";
         e.currentTarget.querySelector(".nav-underline").style.width = "100%";
       }}
-      onMouseLeave={e => {
+      onMouseLeave={(e) => {
         if (!isActive) e.currentTarget.style.color = "var(--txt3)";
-        if (!isActive) e.currentTarget.querySelector(".nav-underline").style.width = "0%";
+        if (!isActive)
+          e.currentTarget.querySelector(".nav-underline").style.width = "0%";
       }}
     >
       <i className={`bi ${icon}`} style={{ fontSize: 16 }} />
@@ -87,9 +89,19 @@ class NavBar extends React.Component {
     const { menuOpen } = this.state;
 
     const allLinks = [
-      ...navLinks.filter(l => !l.auth || user),
-      ...(isProvider ? [{ to: "/donations/create", icon: "bi-plus-circle", label: "Buat Donasi" }] : []),
-      ...(isAdmin ? [{ to: "/admin", icon: "bi-shield-check", label: "Admin" }] : []),
+      ...navLinks.filter((l) => !l.auth || user),
+      ...(isProvider
+        ? [
+            {
+              to: "/donations/create",
+              icon: "bi-plus-circle",
+              label: "Buat Donasi",
+            },
+          ]
+        : []),
+      ...(isAdmin
+        ? [{ to: "/admin", icon: "bi-shield-check", label: "Admin" }]
+        : []),
     ];
 
     return (
@@ -109,7 +121,7 @@ class NavBar extends React.Component {
         >
           {/* Logo */}
           <Link
-            to="/"
+            to="/home"
             className="text-decoration-none d-flex align-items-center gap-2"
             style={{ flexShrink: 0 }}
           >
@@ -120,10 +132,21 @@ class NavBar extends React.Component {
               alt="FoodRescue Logo"
             />
             <div style={{ lineHeight: 1.1 }}>
-              <p className="syne-h1 text-green1" style={{ fontSize: 15, margin: 0 }}>
+              <p
+                className="syne-h1 text-green1"
+                style={{ fontSize: 15, margin: 0 }}
+              >
                 FoodRescue
               </p>
-              <p className="outfit" style={{ fontSize: 9, color: "var(--txt4)", margin: 0, letterSpacing: "0.1em" }}>
+              <p
+                className="outfit"
+                style={{
+                  fontSize: 9,
+                  color: "var(--txt4)",
+                  margin: 0,
+                  letterSpacing: "0.1em",
+                }}
+              >
                 WEB PLATFORM
               </p>
             </div>
@@ -159,55 +182,112 @@ class NavBar extends React.Component {
                   background: "var(--surf2)",
                   transition: "all 0.2s",
                 }}
-                onMouseEnter={e => {
+                onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "var(--g2)";
                   e.currentTarget.style.background = "var(--g5)";
                 }}
-                onMouseLeave={e => {
+                onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = "var(--border)";
                   e.currentTarget.style.background = "var(--surf2)";
                 }}
               >
-                <div style={{
-                  width: 28, height: 28, borderRadius: "50%",
-                  background: "var(--g1)", display: "flex",
-                  alignItems: "center", justifyContent: "center",
-                  fontSize: 13, color: "#fff", flexShrink: 0,
-                }}>
-                  {user.avatar_url
-                    ? <img src={user.avatar_url} alt="avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-                    : <i className="bi bi-person-fill" />
-                  }
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    background: "var(--g1)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 13,
+                    color: "#fff",
+                    flexShrink: 0,
+                  }}
+                >
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt="avatar"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <i className="bi bi-person-fill" />
+                  )}
                 </div>
-                <span className="outfit" style={{ fontSize: 14, fontWeight: 600, color: "var(--txt2)" }}>
+                <span
+                  className="outfit"
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "var(--txt2)",
+                  }}
+                >
                   {user.first_name} {user.last_name}
                 </span>
               </Link>
             ) : (
               <div className="d-none d-md-flex align-items-center gap-2">
-                <Link to="/login" className="outfit" style={{
-                  padding: "7px 16px", borderRadius: 10,
-                  border: "1px solid var(--border)", background: "none",
-                  fontSize: 14, fontWeight: 600, color: "var(--txt2)", textDecoration: "none",
-                  transition: "all 0.2s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--g2)"; e.currentTarget.style.color = "var(--g1)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--txt2)"; }}
-                >Sign In</Link>
-                <Link to="/register" className="outfit" style={{
-                  padding: "7px 16px", borderRadius: 10,
-                  background: "var(--g1)", fontSize: 14, fontWeight: 600,
-                  color: "#fff", textDecoration: "none", transition: "opacity 0.2s",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                >Register</Link>
+                <Link
+                  to="/login"
+                  className="outfit"
+                  style={{
+                    padding: "7px 16px",
+                    borderRadius: 10,
+                    border: "1px solid var(--border)",
+                    background: "none",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "var(--txt2)",
+                    textDecoration: "none",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--g2)";
+                    e.currentTarget.style.color = "var(--g1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.color = "var(--txt2)";
+                  }}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="outfit"
+                  style={{
+                    padding: "7px 16px",
+                    borderRadius: 10,
+                    background: "var(--g1)",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#fff",
+                    textDecoration: "none",
+                    transition: "opacity 0.2s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                >
+                  Register
+                </Link>
               </div>
             )}
 
             {/* Theme Toggle */}
-            <button className="theme-btn" onClick={this.setTheme} title="Toggle theme">
-              <i className={`bi ${this.state.theme === "dark" ? "bi-moon-fill" : "bi-sun-fill"}`} />
+            <button
+              className="theme-btn"
+              onClick={this.setTheme}
+              title="Toggle theme"
+            >
+              <i
+                className={`bi ${this.state.theme === "dark" ? "bi-moon-fill" : "bi-sun-fill"}`}
+              />
             </button>
 
             {/* Mobile: Hamburger */}
@@ -215,7 +295,10 @@ class NavBar extends React.Component {
               className="d-flex d-md-none theme-btn"
               onClick={() => this.setState({ menuOpen: !menuOpen })}
             >
-              <i className={`bi ${menuOpen ? "bi-x-lg" : "bi-list"}`} style={{ fontSize: 20 }} />
+              <i
+                className={`bi ${menuOpen ? "bi-x-lg" : "bi-list"}`}
+                style={{ fontSize: 20 }}
+              />
             </button>
           </div>
         </div>
@@ -247,11 +330,16 @@ class NavBar extends React.Component {
                       fontWeight: isActive ? 700 : 500,
                       color: isActive ? "var(--g1)" : "var(--txt2)",
                       background: isActive ? "var(--g5)" : "none",
-                      border: isActive ? "1px solid var(--g3)" : "1px solid transparent",
+                      border: isActive
+                        ? "1px solid var(--g3)"
+                        : "1px solid transparent",
                     }}
                     onClick={() => this.setState({ menuOpen: false })}
                   >
-                    <i className={`bi ${link.icon}`} style={{ fontSize: 16, width: 20 }} />
+                    <i
+                      className={`bi ${link.icon}`}
+                      style={{ fontSize: 16, width: 20 }}
+                    />
                     {link.label}
                   </Link>
                 );
@@ -259,44 +347,76 @@ class NavBar extends React.Component {
             </div>
 
             {/* Auth */}
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+            <div
+              style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}
+            >
               {user ? (
                 <Link
                   to="/profile"
                   className="outfit d-flex align-items-center gap-3"
                   style={{
-                    padding: "10px 12px", borderRadius: 10,
-                    textDecoration: "none", fontSize: 14, fontWeight: 600,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    textDecoration: "none",
+                    fontSize: 14,
+                    fontWeight: 600,
                     color: "var(--txt2)",
                   }}
                   onClick={() => this.setState({ menuOpen: false })}
                 >
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%",
-                    background: "var(--g1)", display: "flex",
-                    alignItems: "center", justifyContent: "center",
-                    fontSize: 13, color: "#fff", flexShrink: 0,
-                  }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: "var(--g1)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 13,
+                      color: "#fff",
+                      flexShrink: 0,
+                    }}
+                  >
                     <i className="bi bi-person-fill" />
                   </div>
                   {user.first_name} {user.last_name}
                 </Link>
               ) : (
                 <div className="d-flex gap-2">
-                  <Link to="/login" className="outfit flex-fill text-center" style={{
-                    padding: "10px", borderRadius: 10,
-                    border: "1px solid var(--border)", background: "none",
-                    fontSize: 14, fontWeight: 600, color: "var(--txt2)", textDecoration: "none",
-                  }}
+                  <Link
+                    to="/login"
+                    className="outfit flex-fill text-center"
+                    style={{
+                      padding: "10px",
+                      borderRadius: 10,
+                      border: "1px solid var(--border)",
+                      background: "none",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: "var(--txt2)",
+                      textDecoration: "none",
+                    }}
                     onClick={() => this.setState({ menuOpen: false })}
-                  >Sign In</Link>
-                  <Link to="/register" className="outfit flex-fill text-center" style={{
-                    padding: "10px", borderRadius: 10,
-                    background: "var(--g1)", fontSize: 14, fontWeight: 600,
-                    color: "#fff", textDecoration: "none",
-                  }}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="outfit flex-fill text-center"
+                    style={{
+                      padding: "10px",
+                      borderRadius: 10,
+                      background: "var(--g1)",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: "#fff",
+                      textDecoration: "none",
+                    }}
                     onClick={() => this.setState({ menuOpen: false })}
-                  >Register</Link>
+                  >
+                    Register
+                  </Link>
                 </div>
               )}
             </div>
