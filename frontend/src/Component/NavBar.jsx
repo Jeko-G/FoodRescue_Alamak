@@ -67,6 +67,15 @@ class NavBar extends React.Component {
                                         <p className="d-none d-md-inline">Komunitas</p>
                                     </Link>
 
+                                    {
+                                        isProvider && (
+                                            <Link className="btn-light-green py-2 px-3 rounded-2" to="/donations/create">
+                                                <i className="d-inline d-md-none bi bi-plus-circle"></i>
+                                                <p className="d-none d-md-inline">Buat Donasi</p>
+                                            </Link>
+                                        )
+                                    }
+
                                     {this.props.auth.user.role === "admin" && (
                                         <Link className="btn-light-green py-2 px-3 rounded-2" to="/admin">
                                             <p className="">Admin</p>
@@ -78,26 +87,13 @@ class NavBar extends React.Component {
                         
                     </div>
 
-                    <div className="d-flex flex-wrap align-items-center gap-1">
+                    <div className="d-flex flex-wrap align-items-center justify-content-end gap-1">
                         {this.props.auth.user ? (
                             <>
-                                {
-                                    isProvider && (
-                                        <Link className="btn-light-green py-2 px-3 rounded-2" to="/donations/create">
-                                            <i className="d-inline d-md-none bi bi-plus-circle"></i>
-                                            <p className="d-none d-md-inline">Buat Donasi</p>
-                                        </Link>
-                                    )
-                                }
                                 <Link className="d-flex flex-wrap gap-2 text-decoration-none text-green1" to="/profile">
                                     <i className="bi bi-person-circle me-1"></i>
                                         <p>{this.props.auth.user.first_name} {this.props.auth.user.last_name}</p>
 
-                                        <span className="badge-green rounded-5 px-2 py-1 fw-semibold" style={{fontSize:"small"}}>
-                                            {
-                                                this.props.auth.user.role === "food_provider" ? '🍱 Provider' : this.props.auth.user.role === "admin ?" ? '⚙️ Admin' : '🤲 Seeker'
-                                            }
-                                        </span>
                                 </Link>
                             </>
                         ) : (

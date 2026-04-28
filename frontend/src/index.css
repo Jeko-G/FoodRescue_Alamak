@@ -456,7 +456,7 @@ input[type="file"]::file-selector-button:hover {
   position:absolute;
   inset:0;
   background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
-  background-size:64px 64px;
+  background-size:44px 44px;
 }
 
 .grid-detail-responsive::before{
@@ -1681,8 +1681,6 @@ input[type="file"]::file-selector-button:hover {
   background: var(--g1);
 }
 
-/* <<<<<<< HEAD
-=======
 .table-green thead th {
   background-color: var(--txt4) !important;
   color: var(--txt) !important;
@@ -1691,4 +1689,3 @@ input[type="file"]::file-selector-button:hover {
   background-color: var(--g5) !important;
   color: var(--txt) !important;
 }
->>>>>>> ad3c8045740d843f5aa45efc5d493589fa991832 */

@@ -68,7 +68,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<LandingPage />} />
-
+          <Route path="home" element={<Home/>}/>
           <Route path="donations" element={<Donations />} />
           <Route path="donations/:id" element={<DonationDetail />} />
 
