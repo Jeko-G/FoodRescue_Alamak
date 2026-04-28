@@ -17,6 +17,7 @@ import Messages from "./Page/Messages";
 import Community from "./Page/Community";
 import Home from "./Page/Home";
 import AboutUs from "./Page/AboutUs";
+import FAQ from "./Page/FAQ";
 
 import MainLayout from "./Layout/MainLayout";
 import LandingPage from "./Page/LandingPage";
@@ -122,6 +123,7 @@ function AppRoutes() {
             }
           />
           <Route path="about" element={<AboutUs />} />
+          <Route path="faq" element={<FAQ />} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
