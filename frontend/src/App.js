@@ -20,6 +20,7 @@ import AboutUs from "./Page/AboutUs";
 import FAQ from "./Page/FAQ";
 import ForgotPassword from "./Page/ForgotPassword";
 import Contact from "./Page/Contact";
+import PrivacyPolicy from "./Page/PrivacyPolicy";
 
 import MainLayout from "./Layout/MainLayout";
 import LandingPage from "./Page/LandingPage";
@@ -70,7 +71,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<LandingPage />} />
-          <Route path="home" element={<Home/>}/>
+          <Route path="home" element={<Home />} />
           <Route path="donations" element={<Donations />} />
           <Route path="donations/:id" element={<DonationDetail />} />
 
@@ -128,6 +129,7 @@ function AppRoutes() {
           <Route path="faq" element={<FAQ />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="privacy-policy" element={<PrivacyPolicy />} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
