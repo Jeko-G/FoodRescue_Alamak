@@ -33,8 +33,6 @@ const heroTags = [
   { icon: "bi bi-translate", text: "Bahasa Indonesia" },
 ];
 
-// ─── Section: Pengumpulan Data ───────────────────────────────────────────────
-
 class SectionPengumpulan extends Component {
   render() {
     const cards = [
@@ -122,8 +120,6 @@ class SectionPengumpulan extends Component {
     );
   }
 }
-
-// ─── Section: Penggunaan Data ────────────────────────────────────────────────
 
 class SectionPenggunaan extends Component {
   render() {
@@ -217,8 +213,6 @@ class SectionPenggunaan extends Component {
   }
 }
 
-// ─── Section: Berbagi Data ───────────────────────────────────────────────────
-
 class SectionBerbagi extends Component {
   render() {
     const items = [
@@ -296,8 +290,6 @@ class SectionBerbagi extends Component {
     );
   }
 }
-
-// ─── Section: Keamanan Data ──────────────────────────────────────────────────
 
 class SectionKeamanan extends Component {
   render() {
@@ -407,8 +399,6 @@ class SectionKeamanan extends Component {
   }
 }
 
-// ─── Section: Hak Pengguna ───────────────────────────────────────────────────
-
 class SectionHak extends Component {
   render() {
     const rights = [
@@ -515,8 +505,6 @@ class SectionHak extends Component {
     );
   }
 }
-
-// ─── Section: Cookie ─────────────────────────────────────────────────────────
 
 class SectionCookie extends Component {
   render() {
@@ -626,8 +614,6 @@ class SectionCookie extends Component {
   }
 }
 
-// ─── Section: Perubahan Kebijakan ────────────────────────────────────────────
-
 class SectionPerubahan extends Component {
   render() {
     const timeline = [
@@ -711,8 +697,6 @@ class SectionPerubahan extends Component {
     );
   }
 }
-
-// ─── Section: Kontak ─────────────────────────────────────────────────────────
 
 class SectionKontak extends Component {
   render() {
@@ -830,7 +814,6 @@ class AccordionItem extends Component {
     const { section, isOpen, isRead, onToggle } = this.props;
     return (
       <div
-        className="position-relative"
         style={{
           background: "var(--surface)",
           border: `1.5px solid ${isOpen ? "var(--g2)" : "var(--border)"}`,
@@ -952,51 +935,67 @@ class PrivacyPolicy extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      // null = show all, otherwise the key of the active single section
       activeSection: null,
+      // which section accordion is open (for single-view mode)
+      openSection: null,
       readSections: new Set(),
-      scrollProgress: 0,
     };
-    this.sectionRefs = {};
   }
 
-  componentDidMount() {
-    window.addEventListener("scroll", this.handleScroll);
-  }
+  // Toggle between show-all and single-section view
+  selectSection = (key) => {
+    this.setState((prev) => {
+      const readSections = new Set(prev.readSections);
+      readSections.add(key);
 
-  componentWillUnmount() {
-    window.removeEventListener("scroll", this.handleScroll);
-  }
+      return {
+        activeSection: key,
+        openSection: key,
+        readSections,
+      };
+    });
 
-  handleScroll = () => {
-    const scrollTop = window.scrollY;
-    const docHeight =
-      document.documentElement.scrollHeight - window.innerHeight;
-    const progress =
-      docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
-    this.setState({ scrollProgress: progress });
+    // 🔥 scroll ke section
+    setTimeout(() => {
+      const el = document.getElementById(key);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 100);
   };
 
-  toggleSection = (key) => {
+  showAll = () => {
+    this.setState({ activeSection: null, openSection: null });
+
+    setTimeout(() => {
+      const firstSection = document.getElementById(navItems[0].key);
+      if (firstSection) {
+        firstSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 100);
+  };
+
+  // In "show all" mode the accordion items still open/close individually
+  toggleAccordion = (key) => {
     this.setState((prev) => {
       const readSections = new Set(prev.readSections);
       readSections.add(key);
       return {
-        activeSection: prev.activeSection === key ? null : key,
+        openSection: prev.openSection === key ? null : key,
         readSections,
       };
     });
   };
 
-  scrollToSection = (key) => {
-    const el = this.sectionRefs[key];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      this.setState({ activeSection: key });
-    }
-  };
-
   render() {
-    const { activeSection, readSections, scrollProgress } = this.state;
+    const { activeSection, openSection, readSections } = this.state;
+    const totalSections = navItems.length;
+    const readCount = readSections.size;
+    const readProgress = Math.round((readCount / totalSections) * 100);
 
     const sections = [
       {
@@ -1081,44 +1080,59 @@ class PrivacyPolicy extends Component {
       },
     ];
 
+    const visibleSections = activeSection
+      ? sections.filter((s) => s.key === activeSection)
+      : sections;
+
     return (
       <div className="main-bg-color" style={{ minHeight: "100vh" }}>
-        {/* ── Scroll Progress Bar ── */}
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            height: 3,
-            width: `${scrollProgress}%`,
-            background: "linear-gradient(90deg, var(--g1), var(--g2))",
-            zIndex: 9999,
-            transition: "width 0.1s linear",
-          }}
-        />
-
-        {/* ── Hero ── */}
-        <section className="about-hero position-relative overflow-hidden">
+        <section className="about-hero position-relative">
           <div
             className="grid-detail-light position-absolute"
             style={{ inset: 0 }}
           />
-          <div className="container about-hero__inner py-5 px-4 px-md-5">
-            <div className="row align-items-center g-4">
+          <div className="container about-hero__inner py-0 px-4 px-md-5">
+            <div className="row align-items-center g-3">
               {/* Left */}
               <div className="col-lg-8">
-                <div className="about-hero-badge mb-3">
+                <div className="about-hero-badge mb-2">
                   <i className="bi bi-shield-lock-fill" />
                   <span>Kebijakan Privasi</span>
                 </div>
 
-                <h1 className="syne-h1 about-hero__title">
+                <h1
+                  className="syne-h1"
+                  style={{
+                    fontSize: "clamp(26px, 4vw, 44px)",
+                    color: "#fff",
+                    lineHeight: 1.15,
+                    marginBottom: 10,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
                   Privasi Anda adalah
                   <br />
-                  <span>Prioritas Kami</span>
+                  <span
+                    style={{
+                      background: "linear-gradient(135deg,#fff,var(--cr3))",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    Prioritas Kami
+                  </span>
                 </h1>
 
-                <p className="about-hero__desc outfit">
+                <p
+                  className="outfit"
+                  style={{
+                    fontSize: 14,
+                    color: "rgba(255,255,255,0.75)",
+                    lineHeight: 1.75,
+                    maxWidth: 520,
+                    marginBottom: 16,
+                  }}
+                >
                   Dokumen ini menjelaskan bagaimana FoodRescue mengumpulkan,
                   menggunakan, dan melindungi informasi pribadi Anda. Kami
                   berkomitmen penuh pada transparansi dan keamanan data.
@@ -1136,7 +1150,7 @@ class PrivacyPolicy extends Component {
 
               {/* Right — Commitment card */}
               <div className="col-lg-4">
-                <div className="card-transparent rounded-4 p-4">
+                <div className="card-transparent rounded-4 p-3">
                   <p
                     className="outfit"
                     style={{
@@ -1145,7 +1159,7 @@ class PrivacyPolicy extends Component {
                       color: "rgba(255,255,255,0.55)",
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
-                      marginBottom: 14,
+                      marginBottom: 10,
                     }}
                   >
                     Ringkasan Komitmen
@@ -1155,7 +1169,7 @@ class PrivacyPolicy extends Component {
                       key={item.text}
                       className="d-flex align-items-center gap-3"
                       style={{
-                        padding: "10px 0",
+                        padding: "8px 0",
                         borderBottom:
                           i < commitmentItems.length - 1
                             ? "1px solid rgba(255,255,255,0.1)"
@@ -1164,8 +1178,8 @@ class PrivacyPolicy extends Component {
                     >
                       <div
                         style={{
-                          width: 30,
-                          height: 30,
+                          width: 28,
+                          height: 28,
                           borderRadius: 8,
                           background: "rgba(255,255,255,0.15)",
                           display: "flex",
@@ -1199,12 +1213,20 @@ class PrivacyPolicy extends Component {
         {/* ── Body ── */}
         <div
           className="container px-3 px-md-4"
-          style={{ padding: "56px 0 80px" }}
+          style={{ padding: "48px 0 80px" }}
         >
           <div className="row g-4 align-items-start">
-            {/* ── Sidebar ── */}
-            <div className="col-lg-3 d-none d-lg-block">
-              <div style={{ position: "sticky", top: 80 }}>
+            {/* ── Sidebar ── sticky via position:sticky ── */}
+            <div
+              className="col-lg-3 d-none d-lg-block"
+              style={{
+                position: "sticky",
+                top: 100,
+                alignSelf: "flex-start",
+                height: "fit-content",
+              }}
+            >
+              <aside className="faq-sidebar">
                 {/* Daftar Isi label */}
                 <p
                   className="outfit"
@@ -1221,7 +1243,7 @@ class PrivacyPolicy extends Component {
                   Daftar Isi
                 </p>
 
-                {/* Progress */}
+                {/* Read Progress */}
                 <div className="card-basic rounded-3 p-3 mb-3">
                   <div className="d-flex justify-content-between mb-2">
                     <span
@@ -1234,20 +1256,80 @@ class PrivacyPolicy extends Component {
                       className="syne-h1"
                       style={{ fontSize: 11, color: "var(--g1)" }}
                     >
-                      {scrollProgress}%
+                      {readCount}/{totalSections}
                     </span>
                   </div>
                   <div className="pw-str">
                     <div
                       className="pw-fill"
                       style={{
-                        width: `${scrollProgress}%`,
+                        width: `${readProgress}%`,
                         background:
                           "linear-gradient(90deg, var(--g1), var(--g2))",
                       }}
                     />
                   </div>
+                  <p className="outfit pw-hint" style={{ marginBottom: 0 }}>
+                    {readProgress === 100
+                      ? "🎉 Semua sudah dibaca!"
+                      : `${readCount} dari ${totalSections} bagian dibaca`}
+                  </p>
                 </div>
+
+                {/* "Tampilkan Semua" button */}
+                <button
+                  onClick={this.showAll}
+                  className="outfit"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 10,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: activeSection === null ? "var(--g1)" : "var(--txt3)",
+                    marginBottom: 6,
+                    border:
+                      activeSection === null
+                        ? "1px solid rgba(95,139,76,.2)"
+                        : "1px solid transparent",
+                    background: activeSection === null ? "var(--g5)" : "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.2s",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 7,
+                      background:
+                        activeSection === null ? "var(--g1)" : "var(--surf2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 12,
+                      flexShrink: 0,
+                      color: activeSection === null ? "#fff" : "var(--txt4)",
+                    }}
+                  >
+                    <i className="bi bi-grid-fill" />
+                  </div>
+                  <span style={{ flex: 1 }}>Tampilkan Semua</span>
+                </button>
+
+                {/* Divider */}
+                <div
+                  style={{
+                    height: 1,
+                    background: "var(--border)",
+                    margin: "6px 4px 8px",
+                  }}
+                />
 
                 {/* Nav links */}
                 {navItems.map((item) => {
@@ -1256,7 +1338,7 @@ class PrivacyPolicy extends Component {
                   return (
                     <button
                       key={item.key}
-                      onClick={() => this.scrollToSection(item.key)}
+                      onClick={() => this.selectSection(item.key)}
                       className="outfit"
                       style={{
                         display: "flex",
@@ -1311,12 +1393,12 @@ class PrivacyPolicy extends Component {
                     </button>
                   );
                 })}
-              </div>
+              </aside>
             </div>
 
-            {/* ── Main Content ── */}
+            {/* ── Main content ── */}
             <div className="col-lg-9">
-              {/* Info banner */}
+              <div id="top" />
               <div
                 className="card-green rounded-3 d-flex gap-3 align-items-start mb-4"
                 style={{ padding: "20px 24px" }}
@@ -1352,26 +1434,65 @@ class PrivacyPolicy extends Component {
                   >
                     Kebijakan Privasi ini berlaku untuk seluruh layanan
                     FoodRescue, termasuk aplikasi web, aplikasi mobile, dan
-                    layanan terkait. Dengan menggunakan platform kami, Anda
-                    menyetujui praktik yang dijelaskan dalam dokumen ini. Klik
-                    setiap bagian untuk membaca detailnya.
+                    layanan terkait. Pilih bagian di sebelah kiri untuk membaca
+                    satu topik, atau klik{" "}
+                    <strong style={{ color: "var(--g1)" }}>
+                      Tampilkan Semua
+                    </strong>{" "}
+                    untuk melihat keseluruhan.
                   </p>
                 </div>
               </div>
 
+              {/* Section heading when viewing a single section */}
+              {activeSection && (
+                <div className="d-flex align-items-center gap-2 mb-3">
+                  <button
+                    onClick={this.showAll}
+                    className="outfit"
+                    style={{
+                      background: "var(--surf2)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: "5px 12px",
+                      fontSize: 12,
+                      color: "var(--txt3)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <i className="bi bi-arrow-left" /> Tampilkan Semua
+                  </button>
+                  <span
+                    className="outfit"
+                    style={{ fontSize: 12, color: "var(--txt4)" }}
+                  >
+                    / {navItems.find((n) => n.key === activeSection)?.label}
+                  </span>
+                </div>
+              )}
+
               {/* Accordion sections */}
-              {sections.map((section) => (
-                <div
-                  key={section.key}
-                  ref={(el) => {
-                    this.sectionRefs[section.key] = el;
-                  }}
-                >
+              {visibleSections.map((section) => (
+                <div id={section.key} className="faq-main">
                   <AccordionItem
+                    key={section.key}
                     section={section}
-                    isOpen={activeSection === section.key}
+                    isOpen={
+                      activeSection
+                        ? section.key === activeSection
+                        : openSection === section.key
+                    }
                     isRead={readSections.has(section.key)}
-                    onToggle={() => this.toggleSection(section.key)}
+                    onToggle={() => {
+                      if (activeSection) {
+                        this.showAll();
+                      } else {
+                        this.toggleAccordion(section.key);
+                      }
+                    }}
                   />
                 </div>
               ))}
@@ -1402,11 +1523,9 @@ class PrivacyPolicy extends Component {
                   >
                     <i className="bi bi-shield-fill-check" />
                   </div>
-
                   <h3 className="syne-h1 about-impact__title">
                     Anda Terlindungi Bersama FoodRescue
                   </h3>
-
                   <p
                     className="outfit about-impact__subtitle mx-auto mb-4"
                     style={{ maxWidth: 480 }}
@@ -1415,7 +1534,6 @@ class PrivacyPolicy extends Component {
                     Kebijakan Privasi ini. Jika ada pertanyaan, tim kami siap
                     membantu kapan saja.
                   </p>
-
                   <div className="d-flex gap-3 justify-content-center flex-wrap">
                     <button
                       className="faq-help-box__btn-primary outfit"

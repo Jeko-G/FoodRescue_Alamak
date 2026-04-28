@@ -1285,6 +1285,9 @@ input[type="file"]::file-selector-button:hover {
   position: sticky;
   top: 80px;
   padding-top: 10px;
+  align-self: flex-start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
 }
 
 .faq-sidebar__title {
@@ -1605,6 +1608,10 @@ input[type="file"]::file-selector-button:hover {
 .faq-help-box__btn-secondary:hover {
   transform: translateY(-2px);
   background: rgba(255,255,255,.22);
+}
+
+.row {
+  align-items: flex-start !important;
 }
 
 @media (max-width: 576px) {

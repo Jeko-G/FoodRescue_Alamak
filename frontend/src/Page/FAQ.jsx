@@ -1,8 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-// ─── Data ────────────────────────────────────────────────────────────────────
-
 const heroStatsData = [
   { number: "156", label: "Pertanyaan Dijawab" },
   { number: "4.9★", label: "Rating Helpfulness" },
@@ -354,26 +352,17 @@ const faqGroupsData = [
     ],
   },
 ];
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-/**
- * FaqHero
- * Bagian atas halaman dengan judul, deskripsi, search bar, dan quick filter.
- */
 class FaqHero extends React.Component {
   render() {
     const { searchQuery, onSearchChange, activeCategory, onCategoryChange } =
       this.props;
 
     return (
-      <section className="faq-hero">
-        {/* Grid dekoratif di background */}
+      <section className="about-hero position-relative overflow-hidden">
         <div className="faq-hero__grid" />
 
         <div className="container-md faq-hero__inner px-4 px-md-5">
           <div className="row g-5 align-items-center">
-            {/* Teks + search bar */}
             <div className="col-12 col-md-7">
               <div className="faq-hero__badge mb-3">
                 <i className="bi bi-patch-question-fill" />
@@ -390,8 +379,6 @@ class FaqHero extends React.Component {
                 Temukan jawaban atas pertanyaanmu tentang FoodRescue — mulai
                 dari cara daftar, membuat donasi, hingga keamanan akun.
               </p>
-
-              {/* Search bar */}
               <div className="faq-search-box">
                 <i className="bi bi-search faq-search-box__icon" />
                 <input
@@ -410,8 +397,6 @@ class FaqHero extends React.Component {
                   </button>
                 )}
               </div>
-
-              {/* Quick filter topics */}
               <div className="faq-quick-topics mt-3">
                 <button
                   className={`faq-topic-btn${activeCategory === "semua" ? " faq-topic-btn--active" : ""}`}
@@ -430,8 +415,6 @@ class FaqHero extends React.Component {
                 ))}
               </div>
             </div>
-
-            {/* Stats box */}
             <div className="col-12 col-md-5">
               <div className="faq-hero__stat-box">
                 <div className="faq-hero__stat-box-title">
@@ -451,11 +434,6 @@ class FaqHero extends React.Component {
     );
   }
 }
-
-/**
- * FaqSidebar
- * Navigasi kategori di sebelah kiri (hanya tampil di desktop).
- */
 class FaqSidebar extends React.Component {
   render() {
     const { activeCategory, onCategoryChange } = this.props;
@@ -463,8 +441,6 @@ class FaqSidebar extends React.Component {
     return (
       <aside className="faq-sidebar d-none d-md-block">
         <div className="faq-sidebar__title">Kategori</div>
-
-        {/* Semua */}
         <button
           className={`faq-sidebar__link${activeCategory === "semua" ? " faq-sidebar__link--active" : ""}`}
           onClick={() => onCategoryChange("semua")}
@@ -491,11 +467,6 @@ class FaqSidebar extends React.Component {
     );
   }
 }
-
-/**
- * FaqItem
- * Satu item pertanyaan + jawaban dalam bentuk accordion.
- */
 class FaqItem extends React.Component {
   constructor(props) {
     super(props);
@@ -513,7 +484,6 @@ class FaqItem extends React.Component {
 
     return (
       <div className={`faq-item${isOpen ? " faq-item--open" : ""}`}>
-        {/* Baris pertanyaan */}
         <div className="faq-item__question" onClick={this.toggle}>
           <span className="faq-item__question-text">{question}</span>
           <div
@@ -522,8 +492,6 @@ class FaqItem extends React.Component {
             <i className="bi bi-chevron-down" />
           </div>
         </div>
-
-        {/* Jawaban yang bisa dibuka/tutup */}
         <div
           className={`faq-item__answer${isOpen ? " faq-item__answer--open" : ""}`}
         >
@@ -538,17 +506,12 @@ class FaqItem extends React.Component {
   }
 }
 
-/**
- * FaqGroup
- * Satu kelompok pertanyaan berdasarkan kategori.
- */
 class FaqGroup extends React.Component {
   render() {
     const { emoji, title, subtitle, iconBg, items } = this.props;
 
     return (
       <div className="faq-group">
-        {/* Header kategori */}
         <div className="faq-group__header">
           <div className="faq-group__icon" style={{ background: iconBg }}>
             {emoji}
@@ -559,7 +522,6 @@ class FaqGroup extends React.Component {
           </div>
         </div>
 
-        {/* Daftar pertanyaan */}
         {items.map((item, index) => (
           <FaqItem
             key={index}
@@ -573,10 +535,6 @@ class FaqGroup extends React.Component {
   }
 }
 
-/**
- * FaqHelpBox
- * Kotak CTA di bagian bawah — ajakan hubungi tim jika belum ketemu jawaban.
- */
 class FaqHelpBox extends React.Component {
   render() {
     const navigate = this.props.navigate;
@@ -607,11 +565,6 @@ class FaqHelpBox extends React.Component {
   }
 }
 
-/**
- * FaqContent
- * Area konten utama: sidebar + daftar grup FAQ.
- * Mengelola state search query dan kategori aktif.
- */
 class FaqContent extends React.Component {
   constructor(props) {
     super(props);
@@ -637,7 +590,6 @@ class FaqContent extends React.Component {
     });
   }
 
-  /** Filter grup FAQ berdasarkan pencarian atau kategori yang dipilih */
   getFilteredGroups() {
     const { searchQuery, activeCategory } = this.state;
     const query = searchQuery.toLowerCase().trim();
@@ -662,7 +614,6 @@ class FaqContent extends React.Component {
 
     return (
       <>
-        {/* Hero dengan search & filter */}
         <FaqHero
           searchQuery={searchQuery}
           onSearchChange={this.handleSearchChange}
@@ -670,18 +621,14 @@ class FaqContent extends React.Component {
           onCategoryChange={this.handleCategoryChange}
         />
 
-        {/* Layout dua kolom: sidebar kiri + konten kanan */}
         <div className="container-md px-4 px-md-5">
           <div className="faq-layout">
-            {/* Sidebar navigasi kategori */}
             <FaqSidebar
               activeCategory={activeCategory}
               onCategoryChange={this.handleCategoryChange}
             />
 
-            {/* Konten FAQ */}
             <div className="faq-main" ref={this.faqRef}>
-              {/* Pesan jika tidak ada hasil pencarian */}
               {filteredGroups.length === 0 ? (
                 <div className="faq-empty">
                   <div className="faq-empty__emoji">🔍</div>
@@ -713,7 +660,6 @@ class FaqContent extends React.Component {
                 ))
               )}
 
-              {/* Kotak bantuan tambahan */}
               <FaqHelpBox navigate={navigate} />
             </div>
           </div>
@@ -723,14 +669,10 @@ class FaqContent extends React.Component {
   }
 }
 
-// ─── Wrapper untuk useNavigate (hanya function component yang bisa pakai hook) ─
-
 const FaqContentWithNavigate = () => {
   const navigate = useNavigate();
   return <FaqContent navigate={navigate} />;
 };
-
-// ─── Root component ───────────────────────────────────────────────────────────
 
 class FAQ extends React.Component {
   render() {
