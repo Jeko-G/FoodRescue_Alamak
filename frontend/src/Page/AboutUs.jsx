@@ -389,12 +389,18 @@ const AboutCta = () => {
             Yuk jadi bagian dari solusi dan bantu kurangi food waste bersama
             kami.
           </p>
+          <button
+            onClick={() => navigate("/contact")}
+            className="btn-green-gradient px-4 py-2 rounded-3 d-inline-flex align-items-center gap-2 outfit fw-bold"
+          >
+            <i className="bi bi-envelope-fill"></i> Hubungi Kami
+          </button>
 
           <button
             onClick={() => navigate("/register")}
-            className="btn-green-gradient px-4 py-2 rounded-3 d-inline-flex align-items-center gap-2 outfit fw-bold"
+            className="btn-outline-green px-4 py-2 rounded-3 d-inline-flex align-items-center gap-2 outfit fw-bold ms-3"
           >
-            <i className="bi bi-person-plus-fill"></i> Daftar Gratis
+            <i className="bi bi-person-plus"></i> Daftar Gratis
           </button>
         </div>
       </div>
