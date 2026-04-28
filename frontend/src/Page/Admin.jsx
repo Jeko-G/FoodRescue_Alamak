@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../utils/api";
+import socket from "../utils/socket";
 
 // ── Futuristic style injector ──
 const injectAdminStyles = () => {
@@ -127,6 +128,30 @@ function Admin() {
 
   useEffect(() => {
     injectAdminStyles();
+  }, []);
+
+  useEffect(() => {
+    socket.connect();
+    socket.emit("join_admin");
+
+    socket.on("admin_new_message", ({ conversation_id, message }) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c._id === conversation_id
+            ? {
+                ...c,
+                messages: [...(c.messages || []), message],
+                last_message_at: new Date(),
+              }
+            : c,
+        ),
+      );
+    });
+
+    return () => {
+      socket.off("admin_new_message");
+      socket.disconnect();
+    };
   }, []);
 
   const fetchAll = () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../utils/api";
 import { useAuth } from "../Context/AuthContext";
+import socket from "../utils/socket";
 
 function Messages() {
   const { user } = useAuth();
@@ -43,6 +44,27 @@ function Messages() {
   }, []);
 
   useEffect(() => {
+    socket.connect();
+
+    socket.on("new_message", (newMsg) => {
+      setActive((prev) => {
+        if (!prev) return prev;
+        // Cek duplikat
+        const exists = prev.messages.some((m) => m._id === newMsg._id);
+        if (exists) return prev;
+        return { ...prev, messages: [...prev.messages, newMsg] };
+      });
+      // Update unread di sidebar
+      fetchConversations();
+    });
+
+    return () => {
+      socket.off("new_message");
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!active) return;
     const msgCount = active.messages?.length || 0;
     const isSameConv = prevConvIdRef.current === active._id;
@@ -59,7 +81,10 @@ function Messages() {
     prevMsgCountRef.current = msgCount;
   }, [active?._id, active?.messages?.length]);
 
-  const handleSelect = (conv) => fetchActive(conv._id);
+  const handleSelect = (conv) => {
+    socket.emit("join_conversation", conv._id);
+    fetchActive(conv._id);
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -69,8 +94,6 @@ function Messages() {
         content: chatMsg,
       });
       setChatMsg("");
-      fetchActive(active._id);
-      fetchConversations();
     } catch {}
   };
 

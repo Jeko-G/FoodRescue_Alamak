@@ -6,11 +6,43 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 
 const app = express();
+const httpServer = http.createServer(app);
+
+// Socket.io
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
+});
+
+// Simpan io agar bisa diakses di routes
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id);
+
+  // User join room conversation tertentu
+  socket.on("join_conversation", (conversationId) => {
+    socket.join(conversationId);
+  });
+
+  // Admin join room khusus admin
+  socket.on("join_admin", () => {
+    socket.join("admin_room");
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Socket disconnected:", socket.id);
+  });
+});
 
 // Middleware
 app.use(cors());
@@ -37,5 +69,6 @@ mongoose
   .then(() => console.log("MongoDB Connected!"))
   .catch((err) => console.log("MongoDB Error:", err));
 
+// Ganti app.listen → httpServer.listen
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
