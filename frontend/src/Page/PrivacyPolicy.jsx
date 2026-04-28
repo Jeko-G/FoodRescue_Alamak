@@ -618,19 +618,19 @@ class SectionPerubahan extends Component {
   render() {
     const timeline = [
       {
-        date: "Jan 2025",
+        date: "Maret 2026",
         label: "Versi 1.0 — Peluncuran awal kebijakan privasi FoodRescue.",
       },
       {
-        date: "Mar 2025",
+        date: "April 2026",
         label: "Versi 1.1 — Penambahan ketentuan cookie dan pelacakan.",
       },
       {
-        date: "Jun 2025",
+        date: "April 2026",
         label: "Versi 1.2 — Pembaruan hak pengguna sesuai regulasi terbaru.",
       },
       {
-        date: "Apr 2026",
+        date: "Mei 2026",
         label: "Versi 2.0 — Revisi menyeluruh dan peningkatan transparansi.",
       },
     ];

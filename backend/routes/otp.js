@@ -211,7 +211,7 @@ router.post("/send-otp", async (req, res) => {
                 <a href="mailto:foodrescue.indonesia@gmail.com" style="color:#5f8b4c;font-weight:700;text-decoration:none;">foodrescue.indonesia@gmail.com</a>
               </p>
               <div style="height:1px;background:rgba(95,139,76,.14);margin:12px 0;"></div>
-              <p style="margin:0;padding:0;font-size:11px;color:#9ab88a;">© 2025 FoodRescue • All rights reserved</p>
+              <p style="margin:0;padding:0;font-size:11px;color:#9ab88a;">© 2026 FoodRescue • All rights reserved</p>
             </td>
           </tr>
 

@@ -21,13 +21,14 @@ const NavLink = ({ to, icon, label, location }) => {
         textDecoration: "none",
         color: isActive ? "var(--g1)" : "var(--txt3)",
         fontWeight: isActive ? 700 : 500,
-        fontSize: 15,
-        padding: "6px 4px",
+        fontSize: 14,
+        padding: "8px 6px",
         display: "flex",
         alignItems: "center",
-        gap: 6,
+        gap: 5,
         transition: "color 0.2s",
         whiteSpace: "nowrap",
+        flexShrink: 0,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.color = "var(--g1)";
@@ -39,8 +40,8 @@ const NavLink = ({ to, icon, label, location }) => {
           e.currentTarget.querySelector(".nav-underline").style.width = "0%";
       }}
     >
-      <i className={`bi ${icon}`} style={{ fontSize: 16 }} />
-      <span className="d-none d-md-inline">{label}</span>
+      <i className={`bi ${icon}`} style={{ fontSize: 18, flexShrink: 0 }} />
+      <span className="d-none d-xl-inline">{label}</span>
       <span
         className="nav-underline"
         style={{
@@ -116,14 +117,21 @@ class NavBar extends React.Component {
       >
         {/* ── Main Bar ── */}
         <div
-          className="d-flex align-items-center justify-content-between"
-          style={{ padding: "10px 16px", gap: 8 }}
+          style={{
+            padding: "10px 16px",
+            display: "grid",
+            gridTemplateColumns: "auto 1fr auto",
+            alignItems: "center",
+            gap: 12,
+            width: "100%",
+            boxSizing: "border-box",
+          }}
         >
-          {/* Logo */}
+          {/* Logo — kolom kiri, tidak menyusut */}
           <Link
             to="/home"
             className="text-decoration-none d-flex align-items-center gap-2"
-            style={{ flexShrink: 0 }}
+            style={{ flexShrink: 0, minWidth: 0 }}
           >
             <img
               src="/assets/logo/foodrescue_logo_only.png"
@@ -131,7 +139,7 @@ class NavBar extends React.Component {
               height={28}
               alt="FoodRescue Logo"
             />
-            <div style={{ lineHeight: 1.1 }}>
+            <div style={{ lineHeight: 1.1 }} className="d-none d-sm-block">
               <p
                 className="syne-h1 text-green1"
                 style={{ fontSize: 15, margin: 0 }}
@@ -152,10 +160,14 @@ class NavBar extends React.Component {
             </div>
           </Link>
 
-          {/* Desktop Nav Links */}
+          {/* Desktop Nav Links — kolom tengah, overflow scroll kalau mepet */}
           <div
-            className="d-none d-md-flex align-items-center"
-            style={{ gap: 20, flex: 1, paddingLeft: 28 }}
+            className="d-none d-md-flex align-items-center justify-content-center"
+            style={{
+              gap: 20,
+              minWidth: 0,
+              overflow: "hidden",
+            }}
           >
             {allLinks.map((link) => (
               <NavLink
@@ -168,8 +180,11 @@ class NavBar extends React.Component {
             ))}
           </div>
 
-          {/* Right Side */}
-          <div className="d-flex align-items-center gap-2">
+          {/* Right Side — kolom kanan, tidak menyusut */}
+          <div
+            className="d-flex align-items-center gap-2"
+            style={{ flexShrink: 0, justifyContent: "flex-end" }}
+          >
             {/* Desktop: profile / auth buttons */}
             {user ? (
               <Link
@@ -181,6 +196,7 @@ class NavBar extends React.Component {
                   border: "1px solid var(--border)",
                   background: "var(--surf2)",
                   transition: "all 0.2s",
+                  maxWidth: 160,
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "var(--g2)";
@@ -226,13 +242,17 @@ class NavBar extends React.Component {
                     fontSize: 14,
                     fontWeight: 600,
                     color: "var(--txt2)",
+                    maxWidth: 100,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {user.first_name} {user.last_name}
                 </span>
               </Link>
             ) : (
-              <div className="d-none d-md-flex align-items-center gap-2">
+              <div className="d-none d-lg-flex align-items-center gap-2">
                 <Link
                   to="/login"
                   className="outfit"
@@ -313,7 +333,6 @@ class NavBar extends React.Component {
               padding: "12px 16px 16px",
             }}
           >
-            {/* Nav Links */}
             <div className="d-flex flex-column gap-1 mb-3">
               {allLinks.map((link) => {
                 const isActive = location?.pathname === link.to;
@@ -346,7 +365,6 @@ class NavBar extends React.Component {
               })}
             </div>
 
-            {/* Auth */}
             <div
               style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}
             >

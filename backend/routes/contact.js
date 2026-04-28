@@ -118,7 +118,7 @@ router.post("/", async (req, res) => {
             <!-- FOOTER -->
             <tr>
               <td style="padding:20px 40px;background:#f5faf2;border-top:1px solid #eef7e6;text-align:center;">
-                <p style="margin:0;font-size:11px;color:#9ab88a;">© 2025 FoodRescue · All rights reserved</p>
+                <p style="margin:0;font-size:11px;color:#9ab88a;">© 2026 FoodRescue · All rights reserved</p>
                 <p style="margin:4px 0 0;font-size:11px;color:#b8d4a0;">Hubungi kami: <a href="mailto:foodrescue.indonesia@gmail.com" style="color:#7aaf60;text-decoration:none;">foodrescue.indonesia@gmail.com</a></p>
               </td>
             </tr>
@@ -195,7 +195,7 @@ router.post("/", async (req, res) => {
             <tr>
               <td style="padding:20px 40px;background:#f5faf2;border-top:1px solid #eef7e6;text-align:center;">
                 <p style="margin:0;font-size:13px;color:#6b8c5a;">Salam hangat,<br/><strong style="color:#3b5830;">Tim FoodRescue 🌿</strong></p>
-                <p style="margin:12px 0 0;font-size:11px;color:#9ab88a;">© 2025 FoodRescue · All rights reserved</p>
+                <p style="margin:12px 0 0;font-size:11px;color:#9ab88a;">© 2026 FoodRescue · All rights reserved</p>
                 <p style="margin:4px 0 0;font-size:11px;color:#b8d4a0;">Pertanyaan? <a href="mailto:foodrescue.indonesia@gmail.com" style="color:#7aaf60;text-decoration:none;">foodrescue.indonesia@gmail.com</a></p>
               </td>
             </tr>
