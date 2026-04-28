@@ -18,6 +18,8 @@ import Community from "./Page/Community";
 import Home from "./Page/Home";
 import AboutUs from "./Page/AboutUs";
 import FAQ from "./Page/FAQ";
+import ForgotPassword from "./Page/ForgotPassword";
+import Contact from "./Page/Contact";
 
 import MainLayout from "./Layout/MainLayout";
 import LandingPage from "./Page/LandingPage";
@@ -124,6 +126,8 @@ function AppRoutes() {
           />
           <Route path="about" element={<AboutUs />} />
           <Route path="faq" element={<FAQ />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="contact" element={<Contact />} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Route>

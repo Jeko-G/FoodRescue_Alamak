@@ -147,6 +147,41 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// POST /api/auth/reset-password
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, newPassword, otpVerified } = req.body;
+
+    if (!otpVerified) {
+      return res.status(400).json({ msg: "OTP belum diverifikasi" });
+    }
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ msg: "Email dan password wajib diisi" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ msg: "Password minimal 8 karakter" });
+    }
+
+    const emailLower = email.trim().toLowerCase();
+
+    const user = await User.findOne({ email: emailLower }).select(
+      "+password_hash",
+    );
+    if (!user) {
+      return res.status(404).json({ msg: "User tidak ditemukan" });
+    }
+
+    user.password_hash = newPassword;
+    await user.save();
+
+    res.json({ msg: "Password berhasil direset" });
+  } catch (err) {
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
 // GET /api/auth/me
 router.get("/me", require("../middleware/auth").auth, async (req, res) => {
   try {
