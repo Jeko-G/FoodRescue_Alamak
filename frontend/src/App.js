@@ -67,7 +67,13 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<LandingPage />} />
-          <Route path="home" element={<Home />} />
+          <Route path="home" element={
+            <PrivateRoute>
+                
+                <Home />
+                
+              </PrivateRoute>
+          } />
           <Route path="donations" element={<Donations />} />
 
           {/* ✅ create HARUS sebelum :id */}
