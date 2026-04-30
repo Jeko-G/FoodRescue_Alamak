@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import api from "../utils/api";
 import MapView from "../Component/MapView";
+import { useAuth } from "../Context/AuthContext";
 
 function Donations() {
+  const { user } = useAuth();
   const [donations, setDonations] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +21,8 @@ function Donations() {
   const [userPos, setUserPos] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
+
+  const isProviderRole = user?.role === "food_provider";
 
   const fetchDonations = async () => {
     setLoading(true);
@@ -167,7 +171,6 @@ function Donations() {
       className="outfit"
       style={{ background: "var(--bg)", minHeight: "100vh" }}
     >
-      {/* Header Strip */}
       <div
         style={{
           background: "var(--surf2)",
@@ -177,7 +180,6 @@ function Donations() {
           overflow: "hidden",
         }}
       >
-        {/* Grid overlay */}
         <div
           className="grid-detail-responsive"
           style={{ position: "absolute", inset: 0, borderRadius: 0 }}
@@ -194,56 +196,72 @@ function Donations() {
           <div className="d-flex align-items-center gap-2">
             <i
               className="bi bi-box-seam"
-              style={{
-                fontSize: 35,
-                color: "var(--g1)",
-                lineHeight: 1,
-              }}
+              style={{ fontSize: 35, color: "var(--g1)", lineHeight: 1 }}
             />
-
             <h4
               className="syne-h1 mb-0"
-              style={{
-                color: "var(--txt)",
-                fontSize: 22,
-                lineHeight: 1,
-              }}
+              style={{ color: "var(--txt)", fontSize: 22, lineHeight: 1 }}
             >
               Jelajahi Donasi
             </h4>
           </div>
-          <div
-            style={{
-              background: "rgba(95,139,76,0.12)",
-              border: "1px solid rgba(95,139,76,0.3)",
-              borderRadius: 12,
-              padding: "8px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <span
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {isProviderRole && (
+              <div
+                style={{
+                  background: "rgba(232,184,75,0.12)",
+                  border: "1px solid rgba(232,184,75,0.3)",
+                  borderRadius: 10,
+                  padding: "6px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <i
+                  className="bi bi-eye"
+                  style={{ color: "#e8b84b", fontSize: 12 }}
+                />
+                <span
+                  style={{ color: "#e8b84b", fontSize: 12, fontWeight: 600 }}
+                >
+                  Mode Lihat — kamu tidak dapat mengklaim
+                </span>
+              </div>
+            )}
+            <div
               style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "var(--g2)",
-                display: "inline-block",
-                boxShadow: "0 0 8px var(--g2)",
+                background: "rgba(95,139,76,0.12)",
+                border: "1px solid rgba(95,139,76,0.3)",
+                borderRadius: 12,
+                padding: "8px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
               }}
-            />
-            <span style={{ color: "var(--g2)", fontSize: 13, fontWeight: 600 }}>
-              {filteredDonations.length} donasi
-            </span>
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "var(--g2)",
+                  display: "inline-block",
+                  boxShadow: "0 0 8px var(--g2)",
+                }}
+              />
+              <span
+                style={{ color: "var(--g2)", fontSize: 13, fontWeight: 600 }}
+              >
+                {filteredDonations.length} donasi
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container-fluid py-0">
         <div className="row g-0">
-          {/* LEFT — Map Panel */}
           <div
             className="col-md-5"
             style={{
@@ -253,7 +271,6 @@ function Donations() {
               padding: "16px 12px 16px 16px",
             }}
           >
-            {/* Map Container */}
             <div
               style={{
                 flex: 1,
@@ -266,7 +283,6 @@ function Donations() {
               }}
             >
               <MapView donations={filteredDonations} userPos={userPos} />
-              {/* Map Label */}
               <div
                 style={{
                   position: "absolute",
@@ -299,8 +315,6 @@ function Donations() {
                 </span>
               </div>
             </div>
-
-            {/* Radius Card */}
             <div
               style={{
                 marginTop: 12,
@@ -467,7 +481,6 @@ function Donations() {
             </div>
           </div>
 
-          {/* RIGHT — Filter + List */}
           <div
             className="col-md-7"
             style={{
@@ -478,7 +491,6 @@ function Donations() {
               background: "var(--bg)",
             }}
           >
-            {/* Sticky filter wrapper — full width solid bg so cards can't bleed through */}
             <div
               style={{
                 position: "sticky",
@@ -488,7 +500,6 @@ function Donations() {
                 padding: "16px 16px 10px 12px",
               }}
             >
-              {/* Filter Card */}
               <div
                 style={{
                   background: "var(--surface)",
@@ -498,7 +509,6 @@ function Donations() {
                   boxShadow: "var(--shadow2)",
                 }}
               >
-                {/* Header row */}
                 <div
                   style={{
                     display: "flex",
@@ -551,8 +561,6 @@ function Donations() {
                     </button>
                   )}
                 </div>
-
-                {/* All filters in one uniform grid */}
                 <div
                   style={{
                     display: "grid",
@@ -560,7 +568,6 @@ function Donations() {
                     gap: 8,
                   }}
                 >
-                  {/* Search */}
                   <div style={{ position: "relative" }}>
                     <i
                       className="bi bi-search"
@@ -596,8 +603,6 @@ function Donations() {
                       }}
                     />
                   </div>
-
-                  {/* Kategori */}
                   <select
                     className="input-green"
                     value={filter.category}
@@ -622,8 +627,6 @@ function Donations() {
                       </option>
                     ))}
                   </select>
-
-                  {/* Halal */}
                   <select
                     className="input-green"
                     value={filter.halal}
@@ -645,8 +648,6 @@ function Donations() {
                     <option value="true">✅ Halal</option>
                     <option value="false">❌ Non-Halal</option>
                   </select>
-
-                  {/* Kota */}
                   <div style={{ position: "relative" }}>
                     <i
                       className="bi bi-geo"
@@ -684,9 +685,7 @@ function Donations() {
                 </div>
               </div>
             </div>
-            {/* end sticky wrapper */}
 
-            {/* Results */}
             <div style={{ padding: "0 16px 16px 12px" }}>
               {loading ? (
                 <div
@@ -807,7 +806,6 @@ function Donations() {
                           e.currentTarget.style.boxShadow = "var(--shadow)";
                         }}
                       >
-                        {/* Image */}
                         <div style={{ position: "relative" }}>
                           {d.photos?.length > 0 ? (
                             <img
@@ -836,13 +834,11 @@ function Donations() {
                               />
                             </div>
                           )}
-                          {/* Status badge on image */}
                           <div
                             style={{ position: "absolute", top: 6, right: 6 }}
                           >
                             {getStatusBadge(d.status)}
                           </div>
-                          {/* Distance badge */}
                           {dist && (
                             <div
                               style={{
@@ -863,9 +859,26 @@ function Donations() {
                               {dist} km
                             </div>
                           )}
+                          {isProviderRole && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: 6,
+                                left: 6,
+                                background: "rgba(232,184,75,0.85)",
+                                backdropFilter: "blur(4px)",
+                                borderRadius: 20,
+                                padding: "2px 8px",
+                                color: "#000",
+                                fontSize: 9,
+                                fontWeight: 700,
+                              }}
+                            >
+                              👁️ Lihat saja
+                            </div>
+                          )}
                         </div>
 
-                        {/* Body */}
                         <div
                           style={{
                             padding: "10px 12px",
@@ -885,8 +898,6 @@ function Donations() {
                           >
                             {d.title}
                           </h6>
-
-                          {/* Tags */}
                           <div
                             style={{
                               display: "flex",
@@ -926,8 +937,6 @@ function Donations() {
                               </span>
                             )}
                           </div>
-
-                          {/* Info rows */}
                           <div style={{ flex: 1 }}>
                             <div
                               style={{
@@ -1041,7 +1050,6 @@ function Donations() {
                               </span>
                             </div>
                           </div>
-
                           <Link
                             to={`/donations/${d._id}`}
                             className="btn-green-gradient"
@@ -1056,7 +1064,7 @@ function Donations() {
                               fontFamily: "inherit",
                             }}
                           >
-                            Detail →
+                            {isProviderRole ? "Lihat Detail →" : "Detail →"}
                           </Link>
                         </div>
                       </div>
@@ -1065,7 +1073,6 @@ function Donations() {
                 </div>
               )}
             </div>
-            {/* end results wrapper */}
           </div>
         </div>
       </div>

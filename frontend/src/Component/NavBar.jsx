@@ -3,18 +3,37 @@ import { Link } from "react-router";
 import { withRouter } from "../Wrapper/withRouter";
 import api from "../utils/api";
 
-const navLinks = [
-  { to: "/home", icon: "bi-house", label: "Beranda", auth: false },
-  { to: "/donations", icon: "bi-box-seam", label: "Donasi", auth: false },
-  { to: "/history", icon: "bi-clock-history", label: "Riwayat", auth: true },
+const providerLinks = [
+  { to: "/home", icon: "bi-house", label: "Beranda" },
+  { to: "/donations", icon: "bi-box-seam", label: "Donasi" },
+  { to: "/history", icon: "bi-clock-history", label: "Riwayat" },
   {
     to: "/messages",
     icon: "bi-chat-dots",
     label: "Pesan",
-    auth: true,
     badgeKey: "messages",
   },
-  { to: "/community", icon: "bi-people", label: "Komunitas", auth: true },
+  { to: "/community", icon: "bi-people", label: "Komunitas" },
+  { to: "/donations/create", icon: "bi-plus-circle", label: "Buat Donasi" },
+];
+
+const seekerLinks = [
+  { to: "/home", icon: "bi-house", label: "Beranda" },
+  { to: "/donations", icon: "bi-box-seam", label: "Donasi" },
+  { to: "/history", icon: "bi-clock-history", label: "Riwayat" },
+  {
+    to: "/messages",
+    icon: "bi-chat-dots",
+    label: "Pesan",
+    badgeKey: "messages",
+  },
+  { to: "/community", icon: "bi-people", label: "Komunitas" },
+];
+
+const adminLinks = [
+  { to: "/home", icon: "bi-house", label: "Beranda" },
+  { to: "/donations", icon: "bi-box-seam", label: "Donasi" },
+  { to: "/admin", icon: "bi-shield-check", label: "Admin" },
 ];
 
 const NavLink = ({ to, icon, label, location, badge }) => {
@@ -47,7 +66,6 @@ const NavLink = ({ to, icon, label, location, badge }) => {
           e.currentTarget.querySelector(".nav-underline").style.width = "0%";
       }}
     >
-      {/* Icon wrapper with badge */}
       <span
         style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}
       >
@@ -160,28 +178,20 @@ class NavBar extends React.Component {
     clearInterval(this.pollInterval);
   }
 
+  getLinks() {
+    const { user } = this.props.auth;
+    if (!user) return [];
+    if (user.role === "admin") return adminLinks;
+    if (user.role === "food_provider") return providerLinks;
+    return seekerLinks;
+  }
+
   render() {
     const { user } = this.props.auth;
-    const isProvider = user?.role === "food_provider";
-    const isAdmin = user?.role === "admin";
     const location = this.props.location;
     const { menuOpen, unreadMessages } = this.state;
 
-    const allLinks = [
-      ...navLinks.filter((l) => !l.auth || user),
-      ...(isProvider
-        ? [
-            {
-              to: "/donations/create",
-              icon: "bi-plus-circle",
-              label: "Buat Donasi",
-            },
-          ]
-        : []),
-      ...(isAdmin
-        ? [{ to: "/admin", icon: "bi-shield-check", label: "Admin" }]
-        : []),
-    ];
+    const allLinks = this.getLinks();
 
     const getBadge = (link) => {
       if (link.badgeKey === "messages") return unreadMessages;
@@ -198,7 +208,6 @@ class NavBar extends React.Component {
           backdropFilter: "blur(10px)",
         }}
       >
-        {/* ── Main Bar ── */}
         <div
           style={{
             padding: "10px 16px",
@@ -210,9 +219,8 @@ class NavBar extends React.Component {
             boxSizing: "border-box",
           }}
         >
-          {/* Logo — kolom kiri, tidak menyusut */}
           <Link
-            to="/home"
+            to={user ? "/home" : "/"}
             className="text-decoration-none d-flex align-items-center gap-2"
             style={{ flexShrink: 0, minWidth: 0 }}
           >
@@ -242,15 +250,9 @@ class NavBar extends React.Component {
               </p>
             </div>
           </Link>
-
-          {/* Desktop Nav Links — kolom tengah, overflow scroll kalau mepet */}
           <div
             className="d-none d-md-flex align-items-center justify-content-center"
-            style={{
-              gap: 20,
-              minWidth: 0,
-              overflow: "hidden",
-            }}
+            style={{ gap: 20, minWidth: 0, overflow: "hidden" }}
           >
             {allLinks.map((link) => (
               <NavLink
@@ -264,12 +266,10 @@ class NavBar extends React.Component {
             ))}
           </div>
 
-          {/* Right Side — kolom kanan, tidak menyusut */}
           <div
             className="d-flex align-items-center gap-2"
             style={{ flexShrink: 0, justifyContent: "flex-end" }}
           >
-            {/* Desktop: profile / auth buttons */}
             {user ? (
               <Link
                 to="/profile"
@@ -382,8 +382,6 @@ class NavBar extends React.Component {
                 </Link>
               </div>
             )}
-
-            {/* Theme Toggle */}
             <button
               className="theme-btn"
               onClick={this.setTheme}
@@ -393,8 +391,6 @@ class NavBar extends React.Component {
                 className={`bi ${this.state.theme === "dark" ? "bi-moon-fill" : "bi-sun-fill"}`}
               />
             </button>
-
-            {/* Mobile: Hamburger */}
             <button
               className="d-flex d-md-none theme-btn"
               onClick={() => this.setState({ menuOpen: !menuOpen })}
@@ -406,8 +402,6 @@ class NavBar extends React.Component {
             </button>
           </div>
         </div>
-
-        {/* ── Mobile Dropdown Menu ── */}
         {menuOpen && (
           <div
             className="d-md-none"

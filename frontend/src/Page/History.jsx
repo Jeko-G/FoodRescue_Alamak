@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import api from "../utils/api";
 import { useAuth } from "../Context/AuthContext";
 
@@ -7,7 +7,6 @@ function History() {
   const { user } = useAuth();
   const [provided, setProvided] = useState([]);
   const [claimed, setClaimed] = useState([]);
-  const [tab, setTab] = useState("claimed");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,11 +16,9 @@ function History() {
         if (user?.role === "food_provider") {
           const res = await api.get("/donations/user/history");
           setProvided(res.data.provided || []);
-          setTab("provided");
         } else {
           const res = await api.get("/claims/my");
           setClaimed(res.data || []);
-          setTab("claimed");
         }
       } catch {
       } finally {
@@ -140,6 +137,9 @@ function History() {
     );
   };
 
+  const isProvider = user?.role === "food_provider";
+  const activeList = isProvider ? provided : claimed;
+
   if (loading)
     return (
       <div
@@ -175,15 +175,11 @@ function History() {
       </div>
     );
 
-  const isProvider = user?.role === "food_provider";
-  const activeList = tab === "claimed" ? claimed : provided;
-
   return (
     <div
       className="outfit"
       style={{ background: "var(--bg)", minHeight: "100vh" }}
     >
-      {/* Header */}
       <div
         style={{
           background: "var(--surf2)",
@@ -209,22 +205,13 @@ function History() {
           <div className="d-flex align-items-center gap-2">
             <i
               className="bi-clock-history"
-              style={{
-                fontSize: 35,
-                color: "var(--g1)",
-                lineHeight: 1,
-              }}
+              style={{ fontSize: 35, color: "var(--g1)", lineHeight: 1 }}
             />
-
             <h4
               className="syne-h1 mb-0"
-              style={{
-                color: "var(--txt)",
-                fontSize: 22,
-                lineHeight: 1,
-              }}
+              style={{ color: "var(--txt)", fontSize: 22, lineHeight: 1 }}
             >
-              Riwayat
+              Riwayat {isProvider ? "Donasi" : "Klaim"}
             </h4>
           </div>
           <div
@@ -255,101 +242,7 @@ function History() {
       </div>
 
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 20px" }}>
-        {/* Tabs — hanya untuk provider */}
-        {isProvider && (
-          <div
-            style={{
-              display: "inline-flex",
-              gap: 4,
-              padding: 4,
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 12,
-              marginBottom: 24,
-              boxShadow: "var(--shadow)",
-            }}
-          >
-            {[
-              {
-                key: "provided",
-                icon: "bi-basket2",
-                label: `Donasi Saya (${provided.length})`,
-              },
-              {
-                key: "claimed",
-                icon: "bi-bag-check",
-                label: `Klaim Saya (${claimed.length})`,
-              },
-            ].map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 7,
-                  padding: "8px 18px",
-                  borderRadius: 9,
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  background: tab === t.key ? "var(--g1)" : "transparent",
-                  color: tab === t.key ? "#fff" : "var(--txt3)",
-                  transition: "all 0.2s",
-                }}
-              >
-                <i className={`bi ${t.icon}`} style={{ fontSize: 14 }} />
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Claimed Tab */}
-        {tab === "claimed" &&
-          (claimed.length === 0 ? (
-            <EmptyState
-              icon="bi-inbox"
-              title="Belum ada riwayat klaim"
-              sub="Temukan donasi makanan di sekitarmu"
-            >
-              <Link
-                to="/donations"
-                className="btn-green-gradient outfit"
-                style={{
-                  textDecoration: "none",
-                  borderRadius: 10,
-                  padding: "9px 24px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                }}
-              >
-                Cari Donasi →
-              </Link>
-            </EmptyState>
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                gap: 14,
-              }}
-            >
-              {claimed.map((c) => (
-                <ClaimCard
-                  key={c._id}
-                  item={c}
-                  formatDate={formatDate}
-                  getStatusBadge={getStatusBadge}
-                />
-              ))}
-            </div>
-          ))}
-
-        {/* Provided Tab */}
-        {tab === "provided" &&
+        {isProvider &&
           (provided.length === 0 ? (
             <EmptyState
               icon="bi-basket2"
@@ -388,13 +281,49 @@ function History() {
               ))}
             </div>
           ))}
+        {!isProvider &&
+          (claimed.length === 0 ? (
+            <EmptyState
+              icon="bi-inbox"
+              title="Belum ada riwayat klaim"
+              sub="Temukan donasi makanan di sekitarmu"
+            >
+              <Link
+                to="/donations"
+                className="btn-green-gradient outfit"
+                style={{
+                  textDecoration: "none",
+                  borderRadius: 10,
+                  padding: "9px 24px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                Cari Donasi →
+              </Link>
+            </EmptyState>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: 14,
+              }}
+            >
+              {claimed.map((c) => (
+                <ClaimCard
+                  key={c._id}
+                  item={c}
+                  formatDate={formatDate}
+                  getStatusBadge={getStatusBadge}
+                />
+              ))}
+            </div>
+          ))}
       </div>
     </div>
   );
 }
-
-/* ── Sub-components ── */
-
 function EmptyState({ icon, title, sub, children }) {
   return (
     <div
@@ -463,16 +392,13 @@ function ClaimCard({ item: c, formatDate, getStatusBadge }) {
         flexDirection: "column",
       }}
     >
-      {/* Top accent bar */}
       <div
         style={{
           height: 3,
           background: "linear-gradient(90deg, var(--g1), var(--g2))",
         }}
       />
-
       <div style={{ padding: "16px 16px 14px" }}>
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -497,7 +423,6 @@ function ClaimCard({ item: c, formatDate, getStatusBadge }) {
           {getStatusBadge(c.status)}
         </div>
 
-        {/* Info */}
         <div
           style={{
             display: "flex",
@@ -514,7 +439,6 @@ function ClaimCard({ item: c, formatDate, getStatusBadge }) {
           <InfoRow icon="bi-calendar3" text={formatDate(c.created_at)} />
         </div>
 
-        {/* Tracking Log */}
         {c.tracking_log?.length > 0 && (
           <div
             style={{
@@ -595,7 +519,6 @@ function ClaimCard({ item: c, formatDate, getStatusBadge }) {
 
 function DonationCard({ item: d, formatDate, getStatusBadge }) {
   const [hovered, setHovered] = useState(false);
-
   const pct =
     d.quantity > 0 ? Math.round((d.quantity_remaining / d.quantity) * 100) : 0;
   const barColor = pct > 50 ? "var(--g2)" : pct > 20 ? "#e8b84b" : "#e05050";
@@ -615,16 +538,13 @@ function DonationCard({ item: d, formatDate, getStatusBadge }) {
         flexDirection: "column",
       }}
     >
-      {/* Top accent bar */}
       <div
         style={{
           height: 3,
           background: "linear-gradient(90deg, var(--g1), var(--g2))",
         }}
       />
-
       <div style={{ padding: "16px 16px 14px" }}>
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -649,7 +569,6 @@ function DonationCard({ item: d, formatDate, getStatusBadge }) {
           {getStatusBadge(d.status)}
         </div>
 
-        {/* Info */}
         <div
           style={{
             display: "flex",
@@ -662,7 +581,6 @@ function DonationCard({ item: d, formatDate, getStatusBadge }) {
           <InfoRow icon="bi-calendar3" text={formatDate(d.created_at)} />
         </div>
 
-        {/* Progress bar stok */}
         <div style={{ marginBottom: 14 }}>
           <div
             style={{
