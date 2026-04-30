@@ -47,6 +47,7 @@ const UserSchema = new Schema(
     city: String,
     avatar_url: String,
     is_active: { type: Boolean, default: true },
+    is_verified: { type: Boolean, default: false }, // email sudah diverifikasi
     trust_score: { type: Number, default: 5.0, min: 1, max: 5 },
     total_points: { type: Number, default: 0 },
     last_login_at: Date,

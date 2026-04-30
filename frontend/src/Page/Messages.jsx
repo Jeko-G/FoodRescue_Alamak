@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../utils/api";
 import { useAuth } from "../Context/AuthContext";
 import socket from "../utils/socket";
@@ -9,12 +9,20 @@ function Messages() {
   const [active, setActive] = useState(null);
   const [chatMsg, setChatMsg] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherOnline, setOtherOnline] = useState(false);
+
   const messagesContainerRef = useRef(null);
   const prevConvIdRef = useRef(null);
   const prevMsgCountRef = useRef(0);
-  const activeRef = useRef(null); // ← ref untuk akses active di dalam socket
+  const activeRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const myTypingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
 
-  // Selalu sync activeRef dengan state active
+  const userId = user?.id || user?._id;
+
+  // Sync activeRef
   useEffect(() => {
     activeRef.current = active;
   }, [active]);
@@ -24,17 +32,12 @@ function Messages() {
     if (el) el.scrollTop = el.scrollHeight;
   };
 
-  const userId = user?.id || user?._id;
-
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       const res = await api.get("/conversations");
       setConversations(res.data);
-    } catch {
-    } finally {
-      setLoading(false);
-    }
-  };
+    } catch {}
+  }, []);
 
   const fetchActive = async (id) => {
     try {
@@ -43,21 +46,46 @@ function Messages() {
     } catch {}
   };
 
-  // Mount — fetch conversations + setup socket
+  // ── Cek status online lawan bicara ───────────────────────────────
+  const checkOtherOnline = useCallback((conv) => {
+    if (!conv || !socket.connected) return;
+    const otherId = getOtherUserId(conv);
+    if (!otherId) return;
+    socket.emit("check_online", otherId, ({ status }) => {
+      setOtherOnline(status === "online");
+    });
+  }, []);
+
+  const getOtherUserId = (conv) => {
+    if (!conv) return null;
+    const provId =
+      conv.provider_id?._id ||
+      conv.provider_id?.toString?.() ||
+      conv.provider_id;
+    const seekId =
+      conv.seeker_id?._id || conv.seeker_id?.toString?.() || conv.seeker_id;
+    const provStr = provId?.toString?.() || provId;
+    const seekStr = seekId?.toString?.() || seekId;
+    return provStr === userId?.toString() ? seekStr : provStr;
+  };
+
+  // ── Mount: connect socket + setup semua listeners ─────────────────
   useEffect(() => {
-    fetchConversations();
+    if (!userId) return;
 
-    socket.connect();
+    fetchConversations().finally(() => setLoading(false));
 
+    if (!socket.connected) socket.connect();
+
+    // Join personal room
+    socket.emit("join_user", userId);
+
+    // Pesan baru masuk
     socket.on("new_message", (newMsg) => {
-      const currentActive = activeRef.current;
-
-      // Update active conversation kalau pesan masuk ke room yang sedang dibuka
-      if (currentActive?._id) {
+      const cur = activeRef.current;
+      if (cur?._id === newMsg.conversationId) {
         setActive((prev) => {
           if (!prev) return prev;
-
-          // Hapus temp message, tambah pesan asli
           const filtered = prev.messages.filter(
             (m) => !String(m._id).startsWith("temp_"),
           );
@@ -65,34 +93,92 @@ function Messages() {
           if (exists) return { ...prev, messages: filtered };
           return { ...prev, messages: [...filtered, newMsg] };
         });
+        setIsTyping(false);
       }
-
-      // Update sidebar conversations
       fetchConversations();
     });
 
+    // Badge navbar
+    socket.on("new_message_notify", () => {
+      fetchConversations();
+    });
+
+    // Typing dari lawan bicara
+    socket.on("user_typing", ({ isTyping: typing }) => {
+      setIsTyping(typing);
+      if (typing) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 4000);
+      } else {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    });
+
+    // Presence update (online/offline) dari siapapun
+    socket.on("presence_update", ({ userId: uid, status }) => {
+      const cur = activeRef.current;
+      if (!cur) return;
+      const otherId = getOtherUserId(cur);
+      if (uid?.toString() === otherId?.toString()) {
+        setOtherOnline(status === "online");
+      }
+      // Update unread badge di sidebar juga kalau perlu
+    });
+
+    // Saat socket reconnect (misal balik dari halaman lain), join ulang user room
+    const handleReconnect = () => {
+      if (userId) socket.emit("join_user", userId);
+      if (activeRef.current?._id) {
+        socket.emit("join_conversation", activeRef.current._id);
+      }
+    };
+    socket.on("connect", handleReconnect);
+
     return () => {
       socket.off("new_message");
-      socket.disconnect();
+      socket.off("new_message_notify");
+      socket.off("user_typing");
+      socket.off("presence_update");
+      socket.off("connect", handleReconnect);
+      clearTimeout(typingTimeoutRef.current);
+      clearTimeout(myTypingTimeoutRef.current);
+      // JANGAN disconnect — NavBar dan ToastNotification juga pakai socket yang sama
+      // Cukup leave conversation yang sedang aktif
+      if (activeRef.current?._id) {
+        socket.emit("leave_conversation", activeRef.current._id);
+      }
     };
-  }, []);
+  }, [userId]);
 
-  // Join room setiap kali ganti conversation
+  // ── Ganti conversation: join room baru, cek online ────────────────
   useEffect(() => {
-    if (active?._id) {
-      socket.emit("join_conversation", active._id);
+    if (!active?._id) return;
+
+    if (prevConvIdRef.current && prevConvIdRef.current !== active._id) {
+      socket.emit("leave_conversation", prevConvIdRef.current);
+      // Stop typing di room lama
+      socket.emit("typing_stop", {
+        conversationId: prevConvIdRef.current,
+        userId,
+      });
     }
+
+    socket.emit("join_conversation", active._id);
+    setIsTyping(false);
+
+    // Cek status online lawan bicara
+    checkOtherOnline(active);
   }, [active?._id]);
 
-  // Auto scroll
+  // ── Auto scroll ───────────────────────────────────────────────────
   useEffect(() => {
     if (!active) return;
     const msgCount = active.messages?.length || 0;
     const isSameConv = prevConvIdRef.current === active._id;
 
     if (!isSameConv) {
-      setTimeout(() => scrollToBottom("instant"), 0);
-    } else if (isSameConv && msgCount > prevMsgCountRef.current) {
+      setTimeout(() => scrollToBottom("instant"), 50);
+    } else if (msgCount > prevMsgCountRef.current) {
       scrollToBottom("smooth");
     }
 
@@ -101,16 +187,25 @@ function Messages() {
   }, [active?._id, active?.messages?.length]);
 
   const handleSelect = (conv) => {
+    setOtherOnline(false); // reset dulu, tunggu check_online callback
     fetchActive(conv._id);
   };
 
+  // ── Kirim pesan ───────────────────────────────────────────────────
   const handleSend = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!chatMsg.trim() || !active) return;
     const content = chatMsg.trim();
     setChatMsg("");
 
-    // Optimistic update — tampilkan pesan sebelum server balas
+    // Stop typing
+    if (isTypingRef.current) {
+      socket.emit("typing_stop", { conversationId: active._id, userId });
+      isTypingRef.current = false;
+    }
+    clearTimeout(myTypingTimeoutRef.current);
+
+    // Optimistic update
     const tempId = "temp_" + Date.now();
     setActive((prev) => {
       if (!prev) return prev;
@@ -131,9 +226,7 @@ function Messages() {
 
     try {
       await api.post(`/conversations/${active._id}/messages`, { content });
-      // Socket akan handle replace temp message dengan pesan asli
     } catch {
-      // Kalau gagal, hapus temp message dan kembalikan input
       setActive((prev) => {
         if (!prev) return prev;
         return {
@@ -145,11 +238,31 @@ function Messages() {
     }
   };
 
+  // ── Typing handler ────────────────────────────────────────────────
+  const handleTyping = (e) => {
+    setChatMsg(e.target.value);
+    if (!active) return;
+
+    if (!isTypingRef.current) {
+      socket.emit("typing_start", { conversationId: active._id, userId });
+      isTypingRef.current = true;
+    }
+
+    clearTimeout(myTypingTimeoutRef.current);
+    myTypingTimeoutRef.current = setTimeout(() => {
+      socket.emit("typing_stop", { conversationId: active._id, userId });
+      isTypingRef.current = false;
+    }, 2000);
+  };
+
+  // ── Helpers ───────────────────────────────────────────────────────
   const getOtherUser = (conv) => {
     if (!conv) return null;
-    const isProvider =
-      conv.provider_id?._id === userId || conv.provider_id === userId;
-    return isProvider ? conv.seeker_id : conv.provider_id;
+    const provId =
+      conv.provider_id?._id?.toString?.() ||
+      conv.provider_id?.toString?.() ||
+      conv.provider_id;
+    return provId === userId?.toString() ? conv.seeker_id : conv.provider_id;
   };
 
   const formatTime = (date) =>
@@ -162,7 +275,24 @@ function Messages() {
     const d = new Date(date);
     const today = new Date();
     if (d.toDateString() === today.toDateString()) return formatTime(date);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return "Kemarin";
     return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  };
+
+  const formatHeaderDate = (date) => {
+    const d = new Date(date);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === today.toDateString()) return "Hari Ini";
+    if (d.toDateString() === yesterday.toDateString()) return "Kemarin";
+    return d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   const getInitials = (u) => {
@@ -219,7 +349,7 @@ function Messages() {
         flexDirection: "column",
       }}
     >
-      {/* Header */}
+      {/* ── Header ── */}
       <div
         style={{
           background: "var(--surf2)",
@@ -282,9 +412,9 @@ function Messages() {
         </div>
       </div>
 
-      {/* Main layout */}
+      {/* ── Main layout ── */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        {/* Sidebar */}
+        {/* ── SIDEBAR ── */}
         <div
           style={{
             width: 300,
@@ -342,7 +472,8 @@ function Messages() {
               const isActiveCon = active?._id === conv._id;
               const lastMsg = conv.messages?.[conv.messages.length - 1];
               const isProvider =
-                conv.provider_id?._id === userId || conv.provider_id === userId;
+                (conv.provider_id?._id || conv.provider_id)?.toString() ===
+                userId?.toString();
               const unread = isProvider
                 ? conv.provider_unread
                 : conv.seeker_unread;
@@ -373,23 +504,37 @@ function Messages() {
                   <div
                     style={{ display: "flex", alignItems: "center", gap: 10 }}
                   >
-                    <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "50%",
-                        flexShrink: 0,
-                        background: isActiveCon ? "var(--g1)" : "var(--g5)",
-                        border: `1px solid ${isActiveCon ? "var(--g2)" : "var(--border)"}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: isActiveCon ? "#fff" : "var(--txt3)",
-                      }}
-                    >
-                      {getInitials(other)}
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "50%",
+                          background: isActiveCon ? "var(--g1)" : "var(--g5)",
+                          border: `1px solid ${isActiveCon ? "var(--g2)" : "var(--border)"}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: isActiveCon ? "#fff" : "var(--txt3)",
+                        }}
+                      >
+                        {other?.avatar_url ? (
+                          <img
+                            src={other.avatar_url}
+                            alt=""
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          getInitials(other)
+                        )}
+                      </div>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
@@ -403,7 +548,7 @@ function Messages() {
                         <span
                           style={{
                             fontSize: 13,
-                            fontWeight: 700,
+                            fontWeight: unread > 0 ? 700 : 600,
                             color: "var(--txt)",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -416,7 +561,8 @@ function Messages() {
                         <small
                           style={{
                             fontSize: 10,
-                            color: "var(--txt4)",
+                            color: unread > 0 ? "var(--g1)" : "var(--txt4)",
+                            fontWeight: unread > 0 ? 600 : 400,
                             flexShrink: 0,
                           }}
                         >
@@ -434,7 +580,8 @@ function Messages() {
                         <small
                           style={{
                             fontSize: 11,
-                            color: "var(--txt4)",
+                            color: unread > 0 ? "var(--txt2)" : "var(--txt4)",
+                            fontWeight: unread > 0 ? 600 : 400,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -446,16 +593,22 @@ function Messages() {
                               <i className="bi bi-basket2 me-1" />
                               {conv.donation_id.title}
                             </>
+                          ) : lastMsg ? (
+                            lastMsg.is_deleted_by_sender ? (
+                              <em style={{ opacity: 0.6 }}>Pesan dihapus</em>
+                            ) : (
+                              lastMsg.content
+                            )
                           ) : (
-                            lastMsg?.content || "Mulai percakapan"
+                            "Mulai percakapan"
                           )}
                         </small>
                         {unread > 0 && (
                           <span
                             style={{
-                              width: 18,
+                              minWidth: 18,
                               height: 18,
-                              borderRadius: "50%",
+                              borderRadius: 999,
                               flexShrink: 0,
                               background: "var(--g1)",
                               color: "#fff",
@@ -464,9 +617,10 @@ function Messages() {
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
+                              padding: "0 5px",
                             }}
                           >
-                            {unread}
+                            {unread > 99 ? "99+" : unread}
                           </span>
                         )}
                       </div>
@@ -478,7 +632,7 @@ function Messages() {
           )}
         </div>
 
-        {/* Chat Area */}
+        {/* ── CHAT AREA ── */}
         <div
           style={{
             flex: 1,
@@ -529,7 +683,7 @@ function Messages() {
             </div>
           ) : (
             <>
-              {/* Chat Header */}
+              {/* ── Chat Header ── */}
               <div
                 style={{
                   padding: "12px 18px",
@@ -542,23 +696,54 @@ function Messages() {
                   boxShadow: "var(--shadow)",
                 }}
               >
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "50%",
-                    flexShrink: 0,
-                    background: "var(--g1)",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 14,
-                    fontWeight: 700,
-                  }}
-                >
-                  {getInitials(otherActive)}
+                {/* Avatar */}
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: "50%",
+                      background: "var(--g1)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {otherActive?.avatar_url ? (
+                      <img
+                        src={otherActive.avatar_url}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      getInitials(otherActive)
+                    )}
+                  </div>
+                  {/* Online dot */}
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: 1,
+                      right: 1,
+                      width: 9,
+                      height: 9,
+                      borderRadius: "50%",
+                      background: otherOnline ? "#22c55e" : "#9ca3af",
+                      border: "2px solid var(--surface)",
+                      transition: "background 0.3s",
+                    }}
+                  />
                 </div>
+
+                {/* Nama + status */}
                 <div style={{ flex: 1 }}>
                   <p
                     style={{
@@ -570,32 +755,56 @@ function Messages() {
                   >
                     {otherActive?.first_name} {otherActive?.last_name}
                   </p>
-                  {active.donation_id && (
-                    <p
-                      style={{ margin: 0, fontSize: 11, color: "var(--txt4)" }}
-                    >
-                      <i className="bi bi-basket2 me-1" />
-                      {active.donation_id.title}
-                    </p>
-                  )}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <span
+                  <p
                     style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: "var(--g2)",
-                      display: "inline-block",
+                      margin: 0,
+                      fontSize: 11,
+                      color: isTyping
+                        ? "var(--g1)"
+                        : otherOnline
+                          ? "#22c55e"
+                          : "var(--txt4)",
                     }}
-                  />
-                  <span style={{ fontSize: 11, color: "var(--txt4)" }}>
-                    Online
-                  </span>
+                  >
+                    {isTyping
+                      ? "sedang mengetik..."
+                      : otherOnline
+                        ? "Online"
+                        : "Offline"}
+                  </p>
                 </div>
+
+                {/* Donation tag */}
+                {active.donation_id && (
+                  <div
+                    style={{
+                      background: "var(--g5)",
+                      border: "1px solid var(--g3)",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      color: "var(--g1)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <i className="bi bi-basket2" />
+                    <span
+                      style={{
+                        maxWidth: 140,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {active.donation_id.title}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Messages */}
+              {/* ── Messages ── */}
               <div
                 ref={messagesContainerRef}
                 style={{
@@ -604,7 +813,7 @@ function Messages() {
                   padding: "18px 20px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: 8,
+                  gap: 2,
                 }}
               >
                 {active.messages?.length === 0 ? (
@@ -642,13 +851,32 @@ function Messages() {
                 ) : (
                   active.messages.map((m, idx) => {
                     const isMe =
-                      m.sender_id === userId || m.sender_id?._id === userId;
+                      m.sender_id === userId ||
+                      m.sender_id?.toString?.() === userId?.toString() ||
+                      m.sender_id?._id === userId;
                     const isTemp = String(m._id).startsWith("temp_");
+
                     const prevMsg = active.messages[idx - 1];
+                    const nextMsg = active.messages[idx + 1];
+
                     const showDate =
                       !prevMsg ||
                       new Date(m.created_at).toDateString() !==
                         new Date(prevMsg.created_at).toDateString();
+
+                    // Grouping: apakah pesan berikutnya dari sender yang sama?
+                    const isLastInGroup =
+                      !nextMsg ||
+                      nextMsg.sender_id?.toString?.() !==
+                        m.sender_id?.toString?.() ||
+                      new Date(m.created_at).toDateString() !==
+                        new Date(nextMsg.created_at).toDateString();
+
+                    const isFirstInGroup =
+                      !prevMsg ||
+                      prevMsg.sender_id?.toString?.() !==
+                        m.sender_id?.toString?.() ||
+                      showDate;
 
                     return (
                       <div key={m._id}>
@@ -658,7 +886,7 @@ function Messages() {
                               display: "flex",
                               alignItems: "center",
                               gap: 10,
-                              margin: "8px 0 12px",
+                              margin: "12px 0 10px",
                             }}
                           >
                             <div
@@ -673,13 +901,13 @@ function Messages() {
                                 fontSize: 10,
                                 color: "var(--txt4)",
                                 fontWeight: 600,
-                                letterSpacing: "0.05em",
+                                background: "var(--surface)",
+                                padding: "3px 10px",
+                                borderRadius: 20,
+                                border: "1px solid var(--border)",
                               }}
                             >
-                              {new Date(m.created_at).toLocaleDateString(
-                                "id-ID",
-                                { day: "numeric", month: "long" },
-                              )}
+                              {formatHeaderDate(m.created_at)}
                             </span>
                             <div
                               style={{
@@ -690,86 +918,172 @@ function Messages() {
                             />
                           </div>
                         )}
+
                         <div
                           style={{
                             display: "flex",
                             flexDirection: "column",
                             alignItems: isMe ? "flex-end" : "flex-start",
+                            marginBottom: isLastInGroup ? 6 : 2,
                           }}
                         >
                           <div
                             style={{
                               maxWidth: "68%",
-                              padding: "9px 14px",
+                              padding: "8px 13px",
                               borderRadius: isMe
-                                ? "14px 14px 4px 14px"
-                                : "14px 14px 14px 4px",
+                                ? isFirstInGroup
+                                  ? "16px 16px 4px 16px"
+                                  : isLastInGroup
+                                    ? "4px 16px 16px 4px"
+                                    : "4px 16px 4px 4px"
+                                : isFirstInGroup
+                                  ? "16px 16px 16px 4px"
+                                  : isLastInGroup
+                                    ? "4px 16px 16px 16px"
+                                    : "4px 4px 4px 16px",
                               background: isMe ? "var(--g1)" : "var(--surface)",
                               border: isMe ? "none" : "1px solid var(--border)",
                               color: isMe ? "#fff" : "var(--txt)",
                               fontSize: 13,
                               lineHeight: 1.5,
                               wordBreak: "break-word",
-                              boxShadow: "var(--shadow)",
-                              opacity: isTemp ? 0.6 : 1, // ← temp message sedikit transparan
+                              boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                              opacity: isTemp ? 0.6 : 1,
                               transition: "opacity 0.2s",
                             }}
                           >
                             {m.is_deleted_by_sender ? (
-                              <em style={{ opacity: 0.6, fontSize: 12 }}>
+                              <em
+                                style={{
+                                  opacity: 0.6,
+                                  fontSize: 12,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <i className="bi bi-slash-circle" />
                                 Pesan dihapus
                               </em>
                             ) : (
                               m.content
                             )}
                           </div>
-                          <small
-                            style={{
-                              fontSize: 10,
-                              color: "var(--txt4)",
-                              marginTop: 3,
-                              marginLeft: 2,
-                              marginRight: 2,
-                            }}
-                          >
-                            {isTemp ? "Mengirim..." : formatTime(m.created_at)}
-                          </small>
+
+                          {isLastInGroup && (
+                            <small
+                              style={{
+                                fontSize: 10,
+                                color: "var(--txt4)",
+                                marginTop: 2,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 3,
+                              }}
+                            >
+                              {isTemp ? (
+                                <>
+                                  <i
+                                    className="bi bi-clock"
+                                    style={{ fontSize: 9 }}
+                                  />
+                                  Mengirim...
+                                </>
+                              ) : (
+                                <>
+                                  {formatTime(m.created_at)}
+                                  {isMe && (
+                                    <i
+                                      className="bi bi-check2"
+                                      style={{
+                                        fontSize: 11,
+                                        color: "var(--g2)",
+                                      }}
+                                    />
+                                  )}
+                                </>
+                              )}
+                            </small>
+                          )}
                         </div>
                       </div>
                     );
                   })
                 )}
+
+                {/* Typing bubble */}
+                {isTyping && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-end",
+                      gap: 6,
+                      marginTop: 4,
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "10px 16px",
+                        borderRadius: "16px 16px 16px 4px",
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        display: "flex",
+                        gap: 4,
+                        alignItems: "center",
+                      }}
+                    >
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background: "var(--txt4)",
+                            display: "inline-block",
+                            animation: "typing-bounce 1.2s infinite",
+                            animationDelay: `${i * 0.2}s`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Input */}
+              {/* ── Input ── */}
               <div
                 style={{
-                  padding: "12px 16px",
+                  padding: "10px 14px",
                   flexShrink: 0,
                   background: "var(--surface)",
                   borderTop: "1px solid var(--border)",
                 }}
               >
                 <div
-                  style={{ display: "flex", gap: 10, alignItems: "flex-end" }}
+                  style={{ display: "flex", gap: 8, alignItems: "flex-end" }}
                 >
                   <textarea
-                    className="input-green"
-                    placeholder="Tulis pesan... (Enter kirim, Shift+Enter baris baru)"
+                    className="outfit"
+                    placeholder="Tulis pesan..."
                     value={chatMsg}
                     rows={1}
                     style={{
                       flex: 1,
                       resize: "none",
-                      borderRadius: 12,
+                      borderRadius: 22,
                       border: "1px solid var(--border)",
-                      padding: "10px 14px",
+                      padding: "10px 16px",
                       fontSize: 13,
                       fontFamily: "inherit",
                       outline: "none",
                       background: "var(--g5)",
+                      color: "var(--txt)",
+                      maxHeight: 120,
+                      overflowY: "auto",
                     }}
-                    onChange={(e) => setChatMsg(e.target.value)}
+                    onChange={handleTyping}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -781,9 +1095,9 @@ function Messages() {
                     onClick={handleSend}
                     disabled={!chatMsg.trim()}
                     style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 12,
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
                       border: "none",
                       cursor: chatMsg.trim() ? "pointer" : "not-allowed",
                       background: chatMsg.trim() ? "var(--g1)" : "var(--g5)",
@@ -795,7 +1109,7 @@ function Messages() {
                       flexShrink: 0,
                     }}
                   >
-                    <i className="bi bi-send" style={{ fontSize: 16 }} />
+                    <i className="bi bi-send-fill" style={{ fontSize: 15 }} />
                   </button>
                 </div>
               </div>

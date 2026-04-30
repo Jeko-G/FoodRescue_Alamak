@@ -21,6 +21,10 @@ class SignInPage extends React.Component {
       showPassword: false,
       redirect: false,
       rememberMe: false,
+      loading: false,
+      // Email belum diverifikasi
+      needVerify: false,
+      needVerifyEmail: "",
     };
   }
 
@@ -107,18 +111,28 @@ class SignInPage extends React.Component {
     this.setState({ showPassword: !this.state.showPassword });
 
   async getUser() {
-    // Kirim sebagai field 'email' ke backend (backend sudah handle email/username)
     const email = this.state.identifier.trim().toLowerCase();
     const password = this.state.password;
+    this.setState({ loading: true, loginError: "" });
 
     try {
       const res = await api.post("/auth/login", { email, password });
       this.context.login(res.data.token, res.data.user, this.state.rememberMe);
       this.setState({ redirect: true });
     } catch (err) {
-      this.setState({
-        loginError: err.response?.data?.msg || "Login gagal",
-      });
+      const data = err.response?.data;
+      if (data?.requireVerification) {
+        // Email belum diverifikasi — tampilkan banner dengan opsi kirim ulang OTP
+        this.setState({
+          needVerify: true,
+          needVerifyEmail: data.email || email,
+          loginError: "",
+        });
+      } else {
+        this.setState({ loginError: data?.msg || "Login gagal" });
+      }
+    } finally {
+      this.setState({ loading: false });
     }
   }
 
@@ -270,6 +284,73 @@ class SignInPage extends React.Component {
                 <small className="text-danger">{this.state.loginError}</small>
               )}
 
+              {/* Banner: email belum diverifikasi */}
+              {this.state.needVerify && (
+                <div
+                  style={{
+                    background: "rgba(124,92,191,0.08)",
+                    border: "1px solid rgba(124,92,191,0.3)",
+                    borderRadius: 12,
+                    padding: "14px 16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <i
+                      className="bi bi-envelope-exclamation-fill"
+                      style={{ color: "#7c5cbf", fontSize: 16 }}
+                    />
+                    <p
+                      className="outfit mb-0"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--txt)",
+                      }}
+                    >
+                      Email belum diverifikasi
+                    </p>
+                  </div>
+                  <p
+                    className="outfit mb-0"
+                    style={{
+                      fontSize: 12,
+                      color: "var(--txt3)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Akun dengan email{" "}
+                    <strong>{this.state.needVerifyEmail}</strong> belum aktif.
+                    Cek inbox kamu atau klik tombol di bawah untuk kirim ulang
+                    kode OTP.
+                  </p>
+                  <button
+                    className="outfit"
+                    onClick={() => {
+                      window.location.href = `/register?verify=${encodeURIComponent(this.state.needVerifyEmail)}`;
+                    }}
+                    style={{
+                      padding: "9px 16px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(124,92,191,0.4)",
+                      background: "rgba(124,92,191,0.12)",
+                      color: "#7c5cbf",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      textAlign: "center",
+                    }}
+                  >
+                    <i className="bi bi-send me-2" />
+                    Kirim Ulang Kode Verifikasi
+                  </button>
+                </div>
+              )}
+
               {/* Remember me & Lupa password */}
               <div className="d-flex flex-row justify-content-between">
                 <div className="form-check">
@@ -307,10 +388,20 @@ class SignInPage extends React.Component {
               {/* Submit */}
               <button
                 onClick={this.handleSubmit}
+                disabled={this.state.loading}
                 className="btn btn-outline-dark py-3 fs-6 fw-bold d-flex flex-row justify-content-center gap-2 rounded-3 btn-green-gradient"
               >
-                <i className="bi bi-box-arrow-in-right"></i>
-                <span>Masuk Sekarang</span>
+                {this.state.loading ? (
+                  <>
+                    <div className="spinner-border spinner-border-sm" />{" "}
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-box-arrow-in-right"></i>
+                    <span>Masuk Sekarang</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

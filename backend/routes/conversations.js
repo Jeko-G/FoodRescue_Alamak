@@ -133,21 +133,27 @@ router.post("/:id/messages", auth, async (req, res) => {
 
     const newMessage = conversation.messages[conversation.messages.length - 1];
 
-    const io = req.app.get("io");
-    io.to(req.params.id).emit("new_message", newMessage);
-    io.emit("new_message_navbar"); // ← untuk update badge navbar realtime
-
-    io.emit("push_notification", {
-      title: "Pesan Baru 💬",
-      body: content.length > 60 ? content.substring(0, 60) + "..." : content,
-      type: "new_message",
-      for_user: receiverId.toString(),
-    });
-
-    // Notifikasi ke penerima
+    // Tentukan penerima dulu sebelum dipakai
     const receiverId = isProvider
       ? conversation.seeker_id
       : conversation.provider_id;
+
+    const io = req.app.get("io");
+
+    // Kirim pesan ke room conversation — keduanya langsung dapat
+    io.to(req.params.id).emit("new_message", {
+      ...newMessage.toObject(),
+      conversationId: req.params.id,
+    });
+
+    // Kirim event khusus ke penerima agar badge navbar-nya update
+    io.to(`user_${receiverId.toString()}`).emit("new_message_notify", {
+      conversationId: req.params.id,
+      senderId: req.user.id,
+      preview: content.length > 60 ? content.substring(0, 60) + "..." : content,
+    });
+
+    // Notifikasi ke penerima
     await Notification.create({
       user_id: receiverId,
       type: "new_message",

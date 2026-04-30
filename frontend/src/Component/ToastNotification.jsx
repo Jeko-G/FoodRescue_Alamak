@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import socket from "../utils/socket";
 import api from "../utils/api";
 import { useAuth } from "../Context/AuthContext";
@@ -55,9 +55,7 @@ function ToastItem({ toast, onRemove }) {
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    // Masuk
     const t1 = setTimeout(() => setVisible(true), 10);
-    // Keluar otomatis setelah 4.5 detik
     const t2 = setTimeout(() => handleClose(), 4500);
     return () => {
       clearTimeout(t1);
@@ -160,7 +158,7 @@ function ToastItem({ toast, onRemove }) {
         </p>
       </div>
 
-      {/* Close button */}
+      {/* Close */}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -198,11 +196,14 @@ function ToastItem({ toast, onRemove }) {
 function ToastNotification() {
   const { user } = useAuth();
   const [toasts, setToasts] = useState([]);
+  // Pakai ref agar lastCheck tidak reset saat re-render
+  const lastCheckRef = useRef(new Date().toISOString());
+  // Set untuk track notif id yang sudah ditampilkan (cegah duplikat)
+  const shownIdsRef = useRef(new Set());
 
   const addToast = useCallback((title, body, type) => {
     const id = ++toastId;
     setToasts((prev) => {
-      // Maksimal 4 toast sekaligus
       const next = prev.length >= 4 ? prev.slice(1) : prev;
       return [...next, { id, title, body, type }];
     });
@@ -215,48 +216,65 @@ function ToastNotification() {
   useEffect(() => {
     if (!user) return;
 
-    // Polling notifikasi baru setiap 10 detik
-    let lastCheck = new Date().toISOString();
+    const userId = user?.id || user?._id;
+    const userIdStr = userId?.toString();
 
+    // ── Connect socket kalau belum (untuk halaman selain Messages) ──
+    if (!socket.connected) {
+      socket.connect();
+    }
+    // Join personal room agar dapat new_message_notify
+    socket.emit("join_user", userIdStr);
+
+    // ── Polling notifikasi (klaim, rating, dll) ──────────────────────
     const pollNotifications = async () => {
       try {
         const res = await api.get("/notifications");
         const recent = res.data.filter((n) => {
-          return !n.is_read && new Date(n.created_at) > new Date(lastCheck);
+          if (n.is_read) return false;
+          if (shownIdsRef.current.has(n._id)) return false;
+          return new Date(n.created_at) > new Date(lastCheckRef.current);
         });
-        recent.forEach((n) => addToast(n.title, n.body, n.type));
-        if (recent.length > 0) lastCheck = new Date().toISOString();
+        recent.forEach((n) => {
+          shownIdsRef.current.add(n._id);
+          // Jangan tampilkan toast pesan baru dari polling — sudah ada via socket
+          if (n.type !== "new_message") {
+            addToast(n.title, n.body, n.type);
+          }
+        });
+        if (recent.length > 0) {
+          lastCheckRef.current = new Date().toISOString();
+        }
       } catch {}
     };
 
-    const pollInterval = setInterval(pollNotifications, 10000);
+    pollNotifications(); // langsung cek sekali saat mount
+    const pollInterval = setInterval(pollNotifications, 15000);
 
-    // Socket realtime untuk pesan baru
-    const handleNewMessage = (msg) => {
-      // Jangan tampilkan kalau sender adalah diri sendiri
-      const userId = user?.id || user?._id;
-      if (msg?.sender_id === userId || msg?.sender_id?._id === userId) return;
+    // ── Socket: pesan baru khusus untuk user ini ─────────────────────
+    // Gunakan new_message_notify (targeted ke user room) — bukan new_message
+    // agar tidak double dengan Messages.jsx dan hanya penerima yang dapat toast
+    const handleNewMessageNotify = (data) => {
       addToast(
         "Pesan Baru 💬",
-        msg.content?.length > 60
-          ? msg.content.substring(0, 60) + "..."
-          : msg.content || "Ada pesan baru",
+        data.preview || "Ada pesan baru untukmu",
         "new_message",
       );
     };
 
-    // Socket realtime untuk notifikasi klaim
-    const handleClaimNotif = (data) => {
+    // ── Socket: notifikasi push dari backend (klaim, dll) ────────────
+    const handlePushNotif = (data) => {
       addToast(data.title, data.body, data.type);
     };
 
-    socket.on("new_message", handleNewMessage);
-    socket.on("push_notification", handleClaimNotif);
+    socket.on("new_message_notify", handleNewMessageNotify);
+    socket.on("push_notification", handlePushNotif);
 
     return () => {
       clearInterval(pollInterval);
-      socket.off("new_message", handleNewMessage);
-      socket.off("push_notification", handleClaimNotif);
+      socket.off("new_message_notify", handleNewMessageNotify);
+      socket.off("push_notification", handlePushNotif);
+      // Jangan disconnect — NavBar dan Messages juga pakai socket yang sama
     };
   }, [user, addToast]);
 
@@ -273,7 +291,6 @@ function ToastNotification() {
         display: "flex",
         flexDirection: "column",
         gap: 10,
-        // Mobile: full width dengan margin
         maxWidth: "calc(100vw - 32px)",
       }}
     >

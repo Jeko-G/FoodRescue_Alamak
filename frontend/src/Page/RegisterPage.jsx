@@ -51,12 +51,20 @@ class RegisterPage extends React.Component {
     super(props);
     this.state = {
       loading: false,
-      showSuccess: false,
       apiError: "",
       role: "food_provider",
       username: "",
       formError: [],
       theme: "light",
+      // ── Verifikasi email ──
+      showVerify: false,
+      verifyEmail: "",
+      otp: ["", "", "", "", "", ""],
+      otpError: "",
+      otpLoading: false,
+      otpSuccess: false,
+      resendCooldown: 0,
+      // ── Form fields ──
       firstName: "",
       firstNameError: "",
       firstNameTouched: false,
@@ -88,6 +96,10 @@ class RegisterPage extends React.Component {
       agreeTouched: false,
     };
     this.cityDropdownRef = React.createRef();
+    this.cooldownTimer = null;
+    this.otpRefs = Array(6)
+      .fill(null)
+      .map(() => React.createRef());
   }
 
   setTheme = () => {
@@ -107,8 +119,6 @@ class RegisterPage extends React.Component {
       username: e.target.value.toLowerCase(),
       usernameError: "",
     });
-
-  handleRoleChange = (e) => this.setState({ role: e.target.value });
   handleRoleSelect = (role) => this.setState({ role });
   handleFirstNameChange = (e) =>
     this.setState({ firstName: e.target.value, firstNameError: "" });
@@ -123,15 +133,14 @@ class RegisterPage extends React.Component {
   handlePasswordChange = (e) => {
     const value = e.target.value;
     const result = this.checkPasswordStrength(value);
-    let confirmError = "";
-    if (this.state.confirmPassword && value !== this.state.confirmPassword) {
-      confirmError = "Password tidak sesuai";
-    }
     this.setState({
       password: value,
       passwordStrength: result.strength,
       passwordLabel: result.label,
-      confirmPasswordError: confirmError,
+      confirmPasswordError:
+        this.state.confirmPassword && value !== this.state.confirmPassword
+          ? "Password tidak sesuai"
+          : "",
     });
   };
 
@@ -322,6 +331,7 @@ class RegisterPage extends React.Component {
     return { strength, label };
   };
 
+  // ── POST REGISTER ─────────────────────────────────────────────────
   async postUser() {
     this.setState({ loading: true, apiError: "" });
     try {
@@ -338,13 +348,14 @@ class RegisterPage extends React.Component {
             ? this.state.customCity.trim()
             : this.state.city,
       });
-      localStorage.setItem("token", res.data.token);
-      this.setState({ showSuccess: true });
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
+      this.setState({
+        showVerify: true,
+        verifyEmail: res.data.email,
+        resendCooldown: 60,
+        otp: ["", "", "", "", "", ""],
+      });
+      this.startCooldown();
     } catch (err) {
-      console.error(err);
       this.setState({
         apiError:
           err.response?.data?.msg || "Server error / API tidak terhubung",
@@ -354,11 +365,99 @@ class RegisterPage extends React.Component {
     }
   }
 
+  // ── COOLDOWN TIMER ────────────────────────────────────────────────
+  startCooldown = () => {
+    clearInterval(this.cooldownTimer);
+    this.cooldownTimer = setInterval(() => {
+      this.setState((prev) => {
+        if (prev.resendCooldown <= 1) {
+          clearInterval(this.cooldownTimer);
+          return { resendCooldown: 0 };
+        }
+        return { resendCooldown: prev.resendCooldown - 1 };
+      });
+    }, 1000);
+  };
+
+  // ── OTP HANDLERS ──────────────────────────────────────────────────
+  handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const otp = [...this.state.otp];
+    otp[index] = value.slice(-1);
+    this.setState({ otp, otpError: "" });
+    if (value && index < 5) this.otpRefs[index + 1].current?.focus();
+  };
+
+  handleOtpKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !this.state.otp[index] && index > 0) {
+      this.otpRefs[index - 1].current?.focus();
+    }
+    if (e.key === "Enter") this.handleVerifyOtp();
+  };
+
+  handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
+    const otp = [...this.state.otp];
+    pasted.split("").forEach((char, i) => {
+      otp[i] = char;
+    });
+    this.setState({ otp });
+    this.otpRefs[Math.min(pasted.length, 5)].current?.focus();
+  };
+
+  handleVerifyOtp = async () => {
+    const otpValue = this.state.otp.join("");
+    if (otpValue.length < 6) {
+      this.setState({ otpError: "Masukkan 6 digit kode OTP" });
+      return;
+    }
+    this.setState({ otpLoading: true, otpError: "" });
+    try {
+      const res = await api.post("/auth/verify-email", {
+        email: this.state.verifyEmail,
+        otp: otpValue,
+      });
+      localStorage.setItem("token", res.data.token);
+      this.setState({ otpSuccess: true });
+      setTimeout(() => {
+        window.location.href = "/home";
+      }, 2200);
+    } catch (err) {
+      this.setState({
+        otpError: err.response?.data?.msg || "Verifikasi gagal",
+      });
+    } finally {
+      this.setState({ otpLoading: false });
+    }
+  };
+
+  handleResendOtp = async () => {
+    if (this.state.resendCooldown > 0) return;
+    this.setState({ otpError: "", otpLoading: true });
+    try {
+      await api.post("/auth/resend-verify-otp", {
+        email: this.state.verifyEmail,
+      });
+      this.setState({ resendCooldown: 60, otp: ["", "", "", "", "", ""] });
+      this.startCooldown();
+      setTimeout(() => this.otpRefs[0].current?.focus(), 50);
+    } catch (err) {
+      this.setState({
+        otpError: err.response?.data?.msg || "Gagal mengirim ulang OTP",
+      });
+    } finally {
+      this.setState({ otpLoading: false });
+    }
+  };
+
   componentDidMount() {
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
     this.setState({ theme: savedTheme });
-
     this.handleClickOutside = (e) => {
       if (
         this.cityDropdownRef.current &&
@@ -372,33 +471,388 @@ class RegisterPage extends React.Component {
 
   componentWillUnmount() {
     document.removeEventListener("mousedown", this.handleClickOutside);
+    clearInterval(this.cooldownTimer);
   }
 
   render() {
     const { cityOpen, citySearch, city } = this.state;
-
     const filteredKota = KOTA_LIST.filter((k) =>
       k.toLowerCase().includes((citySearch || "").toLowerCase()),
     );
 
-    return (
-      <>
-        {this.state.showSuccess && (
-          <div className="success-overlay">
-            <div className="success-modal">
-              <div className="success-badge">🎉</div>
-              <h2 className="success-title">Yay Register Berhasil!</h2>
-              <p className="success-text">Akun kamu sudah siap digunakan</p>
-              <button
-                className="success-btn"
-                onClick={() => (window.location.href = "/login")}
+    // ── LAYAR VERIFIKASI OTP ──────────────────────────────────────────
+    if (this.state.showVerify) {
+      const {
+        verifyEmail,
+        otp,
+        otpError,
+        otpLoading,
+        otpSuccess,
+        resendCooldown,
+      } = this.state;
+      const otpComplete = otp.join("").length === 6;
+
+      return (
+        <>
+          {/* Toast sukses — pakai class dari index.css */}
+          {otpSuccess && (
+            <div className="success-overlay">
+              <div className="success-modal">
+                <div className="success-badge">
+                  <i className="bi bi-check2-circle" style={{ fontSize: 32 }} />
+                </div>
+                <h2 className="success-title">Email Terverifikasi!</h2>
+                <p className="success-text">
+                  Akun kamu sudah aktif.
+                  <br />
+                  Mengalihkan ke beranda...
+                </p>
+                <div
+                  className="spinner-border spinner-border-sm"
+                  style={{ color: "var(--g2)" }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div
+            className="main-bg-color grid-detail-responsive"
+            style={{
+              minHeight: "100vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px 16px",
+              position: "relative",
+            }}
+          >
+            {/* Glow blobs */}
+            <div
+              style={{
+                position: "fixed",
+                top: -120,
+                left: -120,
+                width: 400,
+                height: 400,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, rgba(95,139,76,0.12) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "fixed",
+                bottom: -80,
+                right: -80,
+                width: 320,
+                height: 320,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, rgba(184,105,74,0.10) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }}
+            />
+
+            <div style={{ width: "100%", maxWidth: 420 }}>
+              {/* Logo */}
+              <div className="text-center mb-4">
+                <div
+                  className="syne-h1"
+                  style={{
+                    fontSize: 26,
+                    background:
+                      "linear-gradient(135deg, var(--g1), var(--cr2))",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    marginBottom: 4,
+                  }}
+                >
+                  <img
+                    src="/assets/logo/foodrescue_logo_only.png"
+                    alt=""
+                    style={{ width: 50, marginRight: 8, marginTop: -8 }}
+                  />
+                  FoodRescue
+                </div>
+                <p style={{ fontSize: 12, color: "var(--txt4)" }}>
+                  Satu langkah lagi untuk bergabung
+                </p>
+              </div>
+
+              {/* Card */}
+              <div
+                className="card-basic"
+                style={{
+                  borderRadius: 20,
+                  padding: "32px 28px",
+                  boxShadow: "var(--shadow2)",
+                }}
               >
-                Lanjut ke Login →
-              </button>
+                {/* Stepper */}
+                <div className="d-flex align-items-center justify-content-center gap-2 mb-4">
+                  {[
+                    { num: 1, label: "Daftar" },
+                    { num: 2, label: "Verifikasi" },
+                    { num: 3, label: "Selesai" },
+                  ].map((s, i, arr) => (
+                    <React.Fragment key={s.num}>
+                      <div
+                        className="d-flex flex-column align-items-center"
+                        style={{ gap: 4 }}
+                      >
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            fontFamily: '"Syne", sans-serif',
+                            transition: "all 0.3s ease",
+                            background:
+                              s.num === 1
+                                ? "var(--g1)"
+                                : s.num === 2
+                                  ? "linear-gradient(135deg, var(--g1), var(--g2))"
+                                  : "var(--surf2)",
+                            color: s.num <= 2 ? "#fff" : "var(--txt4)",
+                            border:
+                              s.num === 2
+                                ? "2px solid var(--g2)"
+                                : "2px solid transparent",
+                            boxShadow:
+                              s.num === 2 ? "0 0 0 4px var(--g4)" : "none",
+                          }}
+                        >
+                          {s.num === 1 ? <i className="bi bi-check" /> : s.num}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: "0.05em",
+                            color: s.num <= 2 ? "var(--txt2)" : "var(--txt4)",
+                          }}
+                        >
+                          {s.label}
+                        </span>
+                      </div>
+                      {i < arr.length - 1 && (
+                        <div
+                          style={{
+                            flex: 1,
+                            height: 2,
+                            marginBottom: 18,
+                            borderRadius: 2,
+                            background:
+                              s.num < 2
+                                ? "linear-gradient(90deg, var(--g1), var(--g2))"
+                                : "var(--border)",
+                            transition: "background 0.4s ease",
+                            maxWidth: 60,
+                          }}
+                        />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+
+                <div className="fade-in">
+                  {/* Header */}
+                  <div className="text-center mb-4">
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 18,
+                        background:
+                          "linear-gradient(135deg, var(--g1), var(--g2))",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto 16px",
+                        boxShadow: "0 8px 24px rgba(95,139,76,0.35)",
+                      }}
+                    >
+                      <i
+                        className="bi bi-envelope-check-fill"
+                        style={{ fontSize: 28, color: "#fff" }}
+                      />
+                    </div>
+                    <h2
+                      className="syne-h1"
+                      style={{
+                        fontSize: 22,
+                        color: "var(--txt)",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Cek Email Kamu
+                    </h2>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "var(--txt3)",
+                        lineHeight: 1.7,
+                      }}
+                    >
+                      Kami mengirimkan kode 6 digit ke{" "}
+                      <span style={{ fontWeight: 700, color: "var(--txt2)" }}>
+                        {verifyEmail}
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* OTP boxes */}
+                  <div className="mb-4">
+                    <label
+                      className="form-label text-center d-block"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--txt2)",
+                      }}
+                    >
+                      Masukkan Kode OTP
+                    </label>
+                    <div className="d-flex justify-content-center gap-2">
+                      {otp.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={this.otpRefs[i]}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) =>
+                            this.handleOtpChange(i, e.target.value)
+                          }
+                          onKeyDown={(e) => this.handleOtpKeyDown(i, e)}
+                          onPaste={i === 0 ? this.handleOtpPaste : undefined}
+                          autoFocus={i === 0}
+                          style={{
+                            width: 46,
+                            height: 54,
+                            textAlign: "center",
+                            fontSize: 22,
+                            fontWeight: 800,
+                            fontFamily: '"Syne", sans-serif',
+                            borderRadius: 12,
+                            border: `2px solid ${otpError ? "#e05050" : digit ? "var(--g2)" : "var(--border)"}`,
+                            background: digit ? "var(--g5)" : "var(--surface)",
+                            color: "var(--txt)",
+                            outline: "none",
+                            transition: "all 0.2s ease",
+                            boxShadow: digit ? "0 0 0 3px var(--g4)" : "none",
+                          }}
+                        />
+                      ))}
+                    </div>
+                    {otpError && (
+                      <div
+                        className="text-center"
+                        style={{
+                          fontSize: 12,
+                          color: "#e05050",
+                          marginTop: 8,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <i className="bi bi-exclamation-circle" />
+                        {otpError}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Resend */}
+                  <div className="text-center mb-3">
+                    <span style={{ fontSize: 13, color: "var(--txt3)" }}>
+                      Tidak menerima kode?{" "}
+                    </span>
+                    {resendCooldown > 0 ? (
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: "var(--txt4)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Kirim ulang dalam {resendCooldown}s
+                      </span>
+                    ) : (
+                      <span
+                        className="login-link text-cream1"
+                        onClick={this.handleResendOtp}
+                        style={{
+                          cursor: "pointer",
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Kirim Ulang
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Submit */}
+                  <button
+                    className="btn btn-green-gradient w-100 outfit"
+                    style={{
+                      padding: "12px",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      borderRadius: 12,
+                    }}
+                    onClick={this.handleVerifyOtp}
+                    disabled={otpLoading || !otpComplete}
+                  >
+                    {otpLoading ? (
+                      <span className="d-flex align-items-center justify-content-center gap-2">
+                        <span className="spinner-border spinner-border-sm" />
+                        Memverifikasi...
+                      </span>
+                    ) : (
+                      <span className="d-flex align-items-center justify-content-center gap-2">
+                        <i className="bi bi-check2-circle" />
+                        Verifikasi Email
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Back */}
+                <div className="text-center mt-3">
+                  <span
+                    className="back-btn"
+                    onClick={() =>
+                      this.setState({
+                        showVerify: false,
+                        otp: ["", "", "", "", "", ""],
+                        otpError: "",
+                      })
+                    }
+                  >
+                    <i className="bi bi-arrow-left me-1" />
+                    Kembali ke form pendaftaran
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        )}
+        </>
+      );
+    }
+    // ── END LAYAR VERIFIKASI ──────────────────────────────────────────
 
+    return (
+      <>
         <div className="w-100 min-vh-100 h-100 d-flex flex-row">
           {/* Left Panel */}
           <div className="d-none d-md-flex col-6 h-100 flex-column justify-content-between p-5 left-signin position-relative grid-detail text-white">
@@ -480,10 +934,6 @@ class RegisterPage extends React.Component {
                 </Link>
               </p>
             </div>
-
-            {this.state.apiError && (
-              <div className="text-danger mb-3">{this.state.apiError}</div>
-            )}
 
             {/* Role Selector */}
             <div className="d-flex flex-column gap-1">
@@ -660,17 +1110,15 @@ class RegisterPage extends React.Component {
                 )}
               </div>
 
-              {/* Kota — Custom Dropdown */}
+              {/* Kota */}
               <div className="d-flex flex-column gap-1">
                 <label className="text-green3 fw-semibold" htmlFor="Kota">
                   KOTA / KABUPATEN
                 </label>
-
                 <div
                   style={{ position: "relative" }}
                   ref={this.cityDropdownRef}
                 >
-                  {/* Trigger */}
                   <div
                     onClick={() =>
                       this.setState({ cityOpen: !cityOpen, citySearch: "" })
@@ -708,8 +1156,6 @@ class RegisterPage extends React.Component {
                       style={{ fontSize: 12, color: "var(--txt4)" }}
                     />
                   </div>
-
-                  {/* Dropdown Panel */}
                   {cityOpen && (
                     <div
                       style={{
@@ -725,7 +1171,6 @@ class RegisterPage extends React.Component {
                         overflow: "hidden",
                       }}
                     >
-                      {/* Search */}
                       <div
                         style={{
                           padding: "10px 10px 8px",
@@ -767,8 +1212,6 @@ class RegisterPage extends React.Component {
                           />
                         </div>
                       </div>
-
-                      {/* List */}
                       <div style={{ maxHeight: 220, overflowY: "auto" }}>
                         {filteredKota.length === 0 ? (
                           <div
@@ -847,8 +1290,6 @@ class RegisterPage extends React.Component {
                     </div>
                   )}
                 </div>
-
-                {/* Input custom kota */}
                 {city === "Lainnya" && (
                   <input
                     type="text"
@@ -879,7 +1320,7 @@ class RegisterPage extends React.Component {
                   <i
                     className={`bi ${this.state.showPassword ? "bi-eye-slash" : "bi-eye"} eye-inside`}
                     onClick={this.togglePassword}
-                  ></i>
+                  />
                   <span className="input-group-text input-green">
                     <i className="bi bi-lock"></i>
                   </span>
@@ -902,7 +1343,7 @@ class RegisterPage extends React.Component {
                                   ? "var(--g2)"
                                   : "#198754",
                     }}
-                  ></div>
+                  />
                 </div>
                 <div className="pw-hint">{this.state.passwordLabel}</div>
                 <div
@@ -982,7 +1423,7 @@ class RegisterPage extends React.Component {
                   <i
                     className={`bi ${this.state.showConfirmPassword ? "bi-eye-slash" : "bi-eye"} eye-inside`}
                     onClick={this.toggleConfirmPassword}
-                  ></i>
+                  />
                   <span
                     className={`input-group-text ${this.state.confirmPasswordTouched && this.state.confirmPasswordError ? "input-error" : "input-green"}`}
                   >
@@ -1011,9 +1452,28 @@ class RegisterPage extends React.Component {
                     className="form-check-label outfit text-green3"
                     htmlFor="checkDefault"
                   >
-                    Saya setuju dengan Syarat Ketentuan dan Kebijakan Privasi
+                    Saya setuju dengan{" "}
+                    <Link
+                      to="/terms-and-condition"
+                      className="outfit fw-semibold text-green3 login-link"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Syarat Ketentuan
+                    </Link>{" "}
+                    dan{" "}
+                    <Link
+                      to="/privacy-policy"
+                      className="outfit fw-semibold text-green3 login-link"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Kebijakan Privasi
+                    </Link>
                   </label>
                 </div>
+
+                {this.state.apiError && (
+                  <div className="text-danger mb-3">{this.state.apiError}</div>
+                )}
                 {this.state.agreeTouched && this.state.agreeError && (
                   <small className="text-danger">{this.state.agreeError}</small>
                 )}
@@ -1031,10 +1491,20 @@ class RegisterPage extends React.Component {
 
               <button
                 onClick={this.handleSubmit}
+                disabled={this.state.loading}
                 className="btn btn-outline-dark py-3 fs-6 fw-bold d-flex flex-row justify-content-center gap-2 rounded-3 btn-green-gradient"
               >
-                <i className="bi bi-person-plus-fill"></i>
-                <span>Buat Akun Sekarang</span>
+                {this.state.loading ? (
+                  <>
+                    <div className="spinner-border spinner-border-sm" />{" "}
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-person-plus-fill"></i>
+                    <span>Buat Akun Sekarang</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

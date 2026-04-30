@@ -23,23 +23,76 @@ const io = new Server(httpServer, {
   },
 });
 
-// Simpan io agar bisa diakses di routes
 app.set("io", io);
+
+// Map userId → Set of socketIds (1 user bisa buka banyak tab)
+const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
-  // User join room conversation tertentu
-  socket.on("join_conversation", (conversationId) => {
-    socket.join(conversationId);
+  // ── USER JOIN (online presence) ──────────────────────────────────
+  socket.on("join_user", (userId) => {
+    socket.userId = userId;
+    socket.join(`user_${userId}`);
+
+    if (!onlineUsers.has(userId)) {
+      onlineUsers.set(userId, new Set());
+    }
+    onlineUsers.get(userId).add(socket.id);
+
+    // Broadcast ke semua: user ini online
+    io.emit("presence_update", { userId, status: "online" });
+    console.log(`User ${userId} online (${onlineUsers.get(userId).size} tab)`);
   });
 
-  // Admin join room khusus admin
+  // ── CONVERSATION ROOM ─────────────────────────────────────────────
+  socket.on("join_conversation", (conversationId) => {
+    socket.join(conversationId);
+    socket.currentConversation = conversationId;
+  });
+
+  socket.on("leave_conversation", (conversationId) => {
+    socket.leave(conversationId);
+    if (socket.currentConversation === conversationId) {
+      socket.currentConversation = null;
+    }
+  });
+
+  // ── TYPING INDICATOR ──────────────────────────────────────────────
+  socket.on("typing_start", ({ conversationId, userId }) => {
+    socket.to(conversationId).emit("user_typing", { userId, isTyping: true });
+  });
+
+  socket.on("typing_stop", ({ conversationId, userId }) => {
+    socket.to(conversationId).emit("user_typing", { userId, isTyping: false });
+  });
+
+  // ── ADMIN ─────────────────────────────────────────────────────────
   socket.on("join_admin", () => {
     socket.join("admin_room");
   });
 
+  // ── GET ONLINE STATUS (query dari client) ─────────────────────────
+  socket.on("check_online", (userId, callback) => {
+    const isOnline =
+      onlineUsers.has(userId) && onlineUsers.get(userId).size > 0;
+    if (typeof callback === "function")
+      callback({ userId, status: isOnline ? "online" : "offline" });
+  });
+
+  // ── DISCONNECT ────────────────────────────────────────────────────
   socket.on("disconnect", () => {
+    const userId = socket.userId;
+    if (userId && onlineUsers.has(userId)) {
+      onlineUsers.get(userId).delete(socket.id);
+      if (onlineUsers.get(userId).size === 0) {
+        onlineUsers.delete(userId);
+        // Broadcast ke semua: user ini offline
+        io.emit("presence_update", { userId, status: "offline" });
+        console.log(`User ${userId} offline`);
+      }
+    }
     console.log("Socket disconnected:", socket.id);
   });
 });
@@ -69,6 +122,5 @@ mongoose
   .then(() => console.log("MongoDB Connected!"))
   .catch((err) => console.log("MongoDB Error:", err));
 
-// Ganti app.listen → httpServer.listen
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
