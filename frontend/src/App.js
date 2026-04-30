@@ -20,6 +20,7 @@ import FAQ from "./Page/FAQ";
 import ForgotPassword from "./Page/ForgotPassword";
 import Contact from "./Page/Contact";
 import PrivacyPolicy from "./Page/PrivacyPolicy";
+import TermsAndCondition from "./Page/TermsAndCondition";
 
 import MainLayout from "./Layout/MainLayout";
 import LandingPage from "./Page/LandingPage";
@@ -67,13 +68,14 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<LandingPage />} />
-          <Route path="home" element={
-            <PrivateRoute>
-                
+          <Route
+            path="home"
+            element={
+              <PrivateRoute>
                 <Home />
-                
               </PrivateRoute>
-          } />
+            }
+          />
           <Route path="donations" element={<Donations />} />
 
           {/* ✅ create HARUS sebelum :id */}
@@ -135,6 +137,7 @@ function AppRoutes() {
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="contact" element={<Contact />} />
           <Route path="privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="terms-and-condition" element={<TermsAndCondition />} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
