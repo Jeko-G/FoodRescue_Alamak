@@ -137,6 +137,13 @@ router.post("/:id/messages", auth, async (req, res) => {
     io.to(req.params.id).emit("new_message", newMessage);
     io.emit("new_message_navbar"); // ← untuk update badge navbar realtime
 
+    io.emit("push_notification", {
+      title: "Pesan Baru 💬",
+      body: content.length > 60 ? content.substring(0, 60) + "..." : content,
+      type: "new_message",
+      for_user: receiverId.toString(),
+    });
+
     // Notifikasi ke penerima
     const receiverId = isProvider
       ? conversation.seeker_id

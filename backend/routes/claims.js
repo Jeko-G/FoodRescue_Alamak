@@ -27,14 +27,13 @@ router.post("/", auth, async (req, res) => {
       });
     }
 
-    const MAX_CLAIM = 1;
+    const MAX_CLAIM = 3;
     if (quantity_claimed > MAX_CLAIM) {
       return res.status(400).json({
         msg: `Maksimal klaim ${MAX_CLAIM} ${donation.quantity_unit} per orang`,
       });
     }
 
-    // Cek klaim duplikat
     const existing = await Claim.findOne({
       donation_id,
       seeker_id: req.user.id,
@@ -59,16 +58,14 @@ router.post("/", auth, async (req, res) => {
     });
     await claim.save();
 
-    // Update quantity_remaining & status donasi
     donation.quantity_remaining -= quantity_claimed;
-    if (donation.quantity_remaining <= 0) {
-      donation.status = "fully_claimed";
-    } else {
-      donation.status = "partially_claimed";
-    }
+    donation.status =
+      donation.quantity_remaining <= 0 ? "fully_claimed" : "partially_claimed";
     await donation.save();
 
-    // Kirim notifikasi ke provider
+    const io = req.app.get("io");
+
+    // Notifikasi ke provider
     await Notification.create({
       user_id: donation.provider_id,
       type: "donation_claimed",
@@ -77,7 +74,14 @@ router.post("/", auth, async (req, res) => {
       reference_type: "claim",
       reference_id: claim._id,
     });
+    io.emit("push_notification", {
+      title: "Donasi Diklaim! 🎉",
+      body: `Donasi "${donation.title}" diklaim sebanyak ${quantity_claimed} ${donation.quantity_unit}`,
+      type: "donation_claimed",
+      for_user: donation.provider_id.toString(),
+    });
 
+    // Notifikasi ke seeker
     await Notification.create({
       user_id: req.user.id,
       type: "claim_confirmed",
@@ -85,6 +89,12 @@ router.post("/", auth, async (req, res) => {
       body: `Kamu berhasil mengklaim "${donation.title}" sebanyak ${quantity_claimed} ${donation.quantity_unit}. Tunggu konfirmasi dari provider.`,
       reference_type: "claim",
       reference_id: claim._id,
+    });
+    io.emit("push_notification", {
+      title: "Klaim Berhasil! ✅",
+      body: `Kamu berhasil mengklaim "${donation.title}"`,
+      type: "claim_confirmed",
+      for_user: req.user.id,
     });
 
     res.status(201).json({ msg: "Klaim berhasil!", claim });
@@ -108,7 +118,7 @@ router.get("/my", auth, async (req, res) => {
   }
 });
 
-// GET /api/claims/donation/:donationId — semua klaim untuk donasi tertentu (provider only)
+// GET /api/claims/donation/:donationId — semua klaim untuk donasi tertentu
 router.get("/donation/:donationId", auth, async (req, res) => {
   try {
     const donation = await Donation.findById(req.params.donationId);
@@ -117,7 +127,6 @@ router.get("/donation/:donationId", auth, async (req, res) => {
     if (donation.provider_id.toString() !== req.user.id) {
       return res.status(403).json({ msg: "Akses ditolak" });
     }
-
     const claims = await Claim.find({ donation_id: req.params.donationId })
       .populate(
         "seeker_id",
@@ -130,7 +139,7 @@ router.get("/donation/:donationId", auth, async (req, res) => {
   }
 });
 
-// PUT /api/claims/:id/confirm — provider konfirmasi klaim
+// PUT /api/claims/:id/confirm
 router.put("/:id/confirm", auth, async (req, res) => {
   try {
     const claim = await Claim.findById(req.params.id).populate("donation_id");
@@ -150,7 +159,7 @@ router.put("/:id/confirm", auth, async (req, res) => {
     });
     await claim.save();
 
-    // Notifikasi ke seeker
+    const io = req.app.get("io");
     await Notification.create({
       user_id: claim.seeker_id,
       type: "claim_confirmed",
@@ -159,6 +168,12 @@ router.put("/:id/confirm", auth, async (req, res) => {
       reference_type: "claim",
       reference_id: claim._id,
     });
+    io.emit("push_notification", {
+      title: "Klaim Dikonfirmasi! ✅",
+      body: `Klaim kamu untuk "${claim.donation_id.title}" telah dikonfirmasi`,
+      type: "claim_confirmed",
+      for_user: claim.seeker_id.toString(),
+    });
 
     res.json({ msg: "Klaim dikonfirmasi!", claim });
   } catch (err) {
@@ -166,7 +181,7 @@ router.put("/:id/confirm", auth, async (req, res) => {
   }
 });
 
-// PUT /api/claims/:id/pickup — tandai sudah diambil
+// PUT /api/claims/:id/pickup
 router.put("/:id/pickup", auth, async (req, res) => {
   try {
     const claim = await Claim.findById(req.params.id).populate("donation_id");
@@ -187,13 +202,21 @@ router.put("/:id/pickup", auth, async (req, res) => {
     });
     await claim.save();
 
+    const io = req.app.get("io");
+    io.emit("push_notification", {
+      title: "Makanan Sudah Diambil! 📦",
+      body: `Makanan dari donasi "${claim.donation_id.title}" sudah diambil`,
+      type: "claim_confirmed",
+      for_user: claim.seeker_id.toString(),
+    });
+
     res.json({ msg: "Ditandai sudah diambil!", claim });
   } catch (err) {
     res.status(500).json({ msg: "Server error" });
   }
 });
 
-// PUT /api/claims/:id/complete — selesaikan klaim
+// PUT /api/claims/:id/complete
 router.put("/:id/complete", auth, async (req, res) => {
   try {
     const claim = await Claim.findById(req.params.id).populate("donation_id");
@@ -214,17 +237,13 @@ router.put("/:id/complete", auth, async (req, res) => {
     });
     await claim.save();
 
-    // Update stats provider
     await User.findByIdAndUpdate(req.user.id, {
       $inc: { "profile.total_donations": 1 },
     });
-
-    // Update stats seeker
     await User.findByIdAndUpdate(claim.seeker_id, {
       $inc: { "profile.total_claims": 1 },
     });
 
-    // Cek apakah semua klaim selesai
     const activeClaims = await Claim.countDocuments({
       donation_id: claim.donation_id._id,
       status: { $in: ["pending", "confirmed", "picked_up"] },
@@ -235,7 +254,7 @@ router.put("/:id/complete", auth, async (req, res) => {
       });
     }
 
-    // Notifikasi ke seeker
+    const io = req.app.get("io");
     await Notification.create({
       user_id: claim.seeker_id,
       type: "donation_completed",
@@ -244,6 +263,12 @@ router.put("/:id/complete", auth, async (req, res) => {
       reference_type: "claim",
       reference_id: claim._id,
     });
+    io.emit("push_notification", {
+      title: "Donasi Selesai! 🎉",
+      body: `Donasi "${claim.donation_id.title}" telah selesai. Jangan lupa beri rating!`,
+      type: "donation_completed",
+      for_user: claim.seeker_id.toString(),
+    });
 
     res.json({ msg: "Klaim selesai!", claim });
   } catch (err) {
@@ -251,7 +276,7 @@ router.put("/:id/complete", auth, async (req, res) => {
   }
 });
 
-// PUT /api/claims/:id/cancel — batalkan klaim
+// PUT /api/claims/:id/cancel
 router.put("/:id/cancel", auth, async (req, res) => {
   try {
     const { cancellation_reason } = req.body;
@@ -276,7 +301,6 @@ router.put("/:id/cancel", auth, async (req, res) => {
     });
     await claim.save();
 
-    // Kembalikan quantity
     const donation = await Donation.findById(claim.donation_id._id);
     donation.quantity_remaining += claim.quantity_claimed;
     if (donation.quantity_remaining > 0 && donation.status !== "available") {
@@ -287,10 +311,10 @@ router.put("/:id/cancel", auth, async (req, res) => {
     }
     await donation.save();
 
-    // Notifikasi
     const notifUserId = isSeeker
       ? claim.donation_id.provider_id
       : claim.seeker_id;
+    const io = req.app.get("io");
     await Notification.create({
       user_id: notifUserId,
       type: "claim_cancelled",
@@ -298,6 +322,12 @@ router.put("/:id/cancel", auth, async (req, res) => {
       body: `Klaim untuk "${claim.donation_id.title}" dibatalkan`,
       reference_type: "claim",
       reference_id: claim._id,
+    });
+    io.emit("push_notification", {
+      title: "Klaim Dibatalkan ❌",
+      body: `Klaim untuk "${claim.donation_id.title}" dibatalkan`,
+      type: "claim_cancelled",
+      for_user: notifUserId.toString(),
     });
 
     res.json({ msg: "Klaim dibatalkan", claim });

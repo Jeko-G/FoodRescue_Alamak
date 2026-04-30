@@ -9,15 +9,19 @@ function Messages() {
   const [active, setActive] = useState(null);
   const [chatMsg, setChatMsg] = useState("");
   const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const prevConvIdRef = useRef(null);
   const prevMsgCountRef = useRef(0);
+  const activeRef = useRef(null); // ← ref untuk akses active di dalam socket
+
+  // Selalu sync activeRef dengan state active
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
 
   const scrollToBottom = (behavior = "smooth") => {
     const el = messagesContainerRef.current;
-    if (el)
-      el.scrollTop = behavior === "instant" ? el.scrollHeight : el.scrollHeight;
+    if (el) el.scrollTop = el.scrollHeight;
   };
 
   const userId = user?.id || user?._id;
@@ -39,47 +43,56 @@ function Messages() {
     } catch {}
   };
 
+  // Mount — fetch conversations + setup socket
   useEffect(() => {
     fetchConversations();
-  }, []);
 
-  useEffect(() => {
     socket.connect();
 
-    socket.on("connect", () => {
-      // Kalau ada conversation aktif saat reconnect, join lagi
-      if (active?._id) {
-        socket.emit("join_conversation", active._id);
-      }
-    });
-
     socket.on("new_message", (newMsg) => {
-      setActive((prev) => {
-        if (!prev) return prev;
-        const exists = prev.messages.some((m) => m._id === newMsg._id);
-        if (exists) return prev;
-        return { ...prev, messages: [...prev.messages, newMsg] };
-      });
+      const currentActive = activeRef.current;
+
+      // Update active conversation kalau pesan masuk ke room yang sedang dibuka
+      if (currentActive?._id) {
+        setActive((prev) => {
+          if (!prev) return prev;
+
+          // Hapus temp message, tambah pesan asli
+          const filtered = prev.messages.filter(
+            (m) => !String(m._id).startsWith("temp_"),
+          );
+          const exists = filtered.some((m) => m._id === newMsg._id);
+          if (exists) return { ...prev, messages: filtered };
+          return { ...prev, messages: [...filtered, newMsg] };
+        });
+      }
+
+      // Update sidebar conversations
       fetchConversations();
     });
 
     return () => {
       socket.off("new_message");
-      socket.off("connect");
       socket.disconnect();
     };
   }, []);
 
+  // Join room setiap kali ganti conversation
+  useEffect(() => {
+    if (active?._id) {
+      socket.emit("join_conversation", active._id);
+    }
+  }, [active?._id]);
+
+  // Auto scroll
   useEffect(() => {
     if (!active) return;
     const msgCount = active.messages?.length || 0;
     const isSameConv = prevConvIdRef.current === active._id;
 
     if (!isSameConv) {
-      // Ganti conversation — langsung ke bawah tanpa animasi halaman
       setTimeout(() => scrollToBottom("instant"), 0);
     } else if (isSameConv && msgCount > prevMsgCountRef.current) {
-      // Pesan baru — scroll smooth di dalam container
       scrollToBottom("smooth");
     }
 
@@ -88,20 +101,48 @@ function Messages() {
   }, [active?._id, active?.messages?.length]);
 
   const handleSelect = (conv) => {
-    socket.emit("join_conversation", conv._id);
     fetchActive(conv._id);
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
     if (!chatMsg.trim() || !active) return;
+    const content = chatMsg.trim();
+    setChatMsg("");
+
+    // Optimistic update — tampilkan pesan sebelum server balas
+    const tempId = "temp_" + Date.now();
+    setActive((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        messages: [
+          ...prev.messages,
+          {
+            _id: tempId,
+            sender_id: userId,
+            content,
+            created_at: new Date().toISOString(),
+            message_type: "text",
+          },
+        ],
+      };
+    });
+
     try {
-      await api.post(`/conversations/${active._id}/messages`, {
-        content: chatMsg,
+      await api.post(`/conversations/${active._id}/messages`, { content });
+      // Socket akan handle replace temp message dengan pesan asli
+    } catch {
+      // Kalau gagal, hapus temp message dan kembalikan input
+      setActive((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.filter((m) => m._id !== tempId),
+        };
       });
-      setChatMsg("");
-      fetchActive(active._id);
-    } catch {}
+      setChatMsg(content);
+    }
   };
 
   const getOtherUser = (conv) => {
@@ -124,11 +165,10 @@ function Messages() {
     return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
   };
 
-  const getInitials = (user) => {
-    if (!user) return "?";
+  const getInitials = (u) => {
+    if (!u) return "?";
     return (
-      `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() ||
-      "?"
+      `${u.first_name?.[0] || ""}${u.last_name?.[0] || ""}`.toUpperCase() || "?"
     );
   };
 
@@ -206,20 +246,11 @@ function Messages() {
           <div className="d-flex align-items-center gap-2">
             <i
               className="bi-chat-dots"
-              style={{
-                fontSize: 35,
-                color: "var(--g1)",
-                lineHeight: 1,
-              }}
+              style={{ fontSize: 35, color: "var(--g1)", lineHeight: 1 }}
             />
-
             <h4
               className="syne-h1 mb-0"
-              style={{
-                color: "var(--txt)",
-                fontSize: 22,
-                lineHeight: 1,
-              }}
+              style={{ color: "var(--txt)", fontSize: 22, lineHeight: 1 }}
             >
               Pesan
             </h4>
@@ -253,7 +284,7 @@ function Messages() {
 
       {/* Main layout */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        {/* ── Sidebar ── */}
+        {/* Sidebar */}
         <div
           style={{
             width: 300,
@@ -342,7 +373,6 @@ function Messages() {
                   <div
                     style={{ display: "flex", alignItems: "center", gap: 10 }}
                   >
-                    {/* Avatar */}
                     <div
                       style={{
                         width: 40,
@@ -361,7 +391,6 @@ function Messages() {
                     >
                       {getInitials(other)}
                     </div>
-
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
@@ -449,7 +478,7 @@ function Messages() {
           )}
         </div>
 
-        {/* ── Chat Area ── */}
+        {/* Chat Area */}
         <div
           style={{
             flex: 1,
@@ -550,7 +579,6 @@ function Messages() {
                     </p>
                   )}
                 </div>
-                {/* Online indicator */}
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <span
                     style={{
@@ -615,6 +643,7 @@ function Messages() {
                   active.messages.map((m, idx) => {
                     const isMe =
                       m.sender_id === userId || m.sender_id?._id === userId;
+                    const isTemp = String(m._id).startsWith("temp_");
                     const prevMsg = active.messages[idx - 1];
                     const showDate =
                       !prevMsg ||
@@ -623,7 +652,6 @@ function Messages() {
 
                     return (
                       <div key={m._id}>
-                        {/* Date separator */}
                         {showDate && (
                           <div
                             style={{
@@ -662,7 +690,6 @@ function Messages() {
                             />
                           </div>
                         )}
-
                         <div
                           style={{
                             display: "flex",
@@ -684,6 +711,8 @@ function Messages() {
                               lineHeight: 1.5,
                               wordBreak: "break-word",
                               boxShadow: "var(--shadow)",
+                              opacity: isTemp ? 0.6 : 1, // ← temp message sedikit transparan
+                              transition: "opacity 0.2s",
                             }}
                           >
                             {m.is_deleted_by_sender ? (
@@ -703,14 +732,13 @@ function Messages() {
                               marginRight: 2,
                             }}
                           >
-                            {formatTime(m.created_at)}
+                            {isTemp ? "Mengirim..." : formatTime(m.created_at)}
                           </small>
                         </div>
                       </div>
                     );
                   })
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               {/* Input */}
