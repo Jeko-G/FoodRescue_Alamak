@@ -27,7 +27,7 @@ router.post("/", auth, async (req, res) => {
       });
     }
 
-    const MAX_CLAIM = 3;
+    const MAX_CLAIM = 1;
     if (quantity_claimed > MAX_CLAIM) {
       return res.status(400).json({
         msg: `Maksimal klaim ${MAX_CLAIM} ${donation.quantity_unit} per orang`,
