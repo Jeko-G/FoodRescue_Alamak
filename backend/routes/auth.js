@@ -3,8 +3,8 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
-const User = require("../models/User");
-const Otp = require("../models/Otp");
+const User = require("../models/user");
+const Otp = require("../models/otp");
 const passport = require("../config/passport");
 const { auth } = require("../middleware/auth");
 
@@ -265,7 +265,7 @@ router.post("/complete-profile", auth, async (req, res) => {
     // Notif +30 poin complete profile (sekali)
     if (!wasComplete) {
       try {
-        const Notification = require("../models/Notification");
+        const Notification = require("../models/notification");
         await Notification.create({
           user_id: user._id,
           type: "donation_completed",

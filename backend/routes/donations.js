@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const Donation = require("../models/Donation");
-const FoodCategory = require("../models/FoodCategory");
-const User = require("../models/User");
-const Notification = require("../models/Notification");
+const Donation = require("../models/donation");
+const FoodCategory = require("../models/foodcategory");
+const User = require("../models/user");
+const Notification = require("../models/notification");
 const { auth, requireRole } = require("../middleware/auth");
 
 const cloudinary = require("../config/cloudinary");

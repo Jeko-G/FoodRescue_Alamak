@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const Claim = require("../models/Claim");
-const Donation = require("../models/Donation");
-const User = require("../models/User");
-const Notification = require("../models/Notification");
+const Claim = require("../models/claim");
+const Donation = require("../models/donation");
+const User = require("../models/user");
+const Notification = require("../models/notification");
 const { auth } = require("../middleware/auth");
 
 // POST /api/claims
@@ -22,20 +22,16 @@ router.post("/", auth, async (req, res) => {
       return res.status(400).json({ msg: "Tidak bisa klaim donasi sendiri" });
     }
     if (quantity_claimed > donation.quantity_remaining) {
-      return res
-        .status(400)
-        .json({
-          msg: `Stok tersisa hanya ${donation.quantity_remaining} ${donation.quantity_unit}`,
-        });
+      return res.status(400).json({
+        msg: `Stok tersisa hanya ${donation.quantity_remaining} ${donation.quantity_unit}`,
+      });
     }
 
     const MAX_CLAIM = 1;
     if (quantity_claimed > MAX_CLAIM) {
-      return res
-        .status(400)
-        .json({
-          msg: `Maksimal klaim ${MAX_CLAIM} ${donation.quantity_unit} per orang`,
-        });
+      return res.status(400).json({
+        msg: `Maksimal klaim ${MAX_CLAIM} ${donation.quantity_unit} per orang`,
+      });
     }
 
     const existing = await Claim.findOne({

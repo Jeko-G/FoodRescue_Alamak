@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
-const Otp = require("../models/Otp");
-const User = require("../models/User");
+const Otp = require("../models/otp");
+const User = require("../models/user");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",

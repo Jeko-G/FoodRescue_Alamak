@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const Conversation = require("../models/Conversation");
-const Notification = require("../models/Notification");
+const Conversation = require("../models/conversation");
+const Notification = require("../models/notification");
 const { auth } = require("../middleware/auth");
 
 // GET /api/conversations
@@ -58,7 +58,7 @@ router.post("/", auth, async (req, res) => {
     // Tentukan siapa provider dan siapa seeker
     let provId, seekId;
     if (donation_id) {
-      const don = await require("../models/Donation").findById(donation_id);
+      const don = await require("../models/donation").findById(donation_id);
       if (don && don.provider_id.toString() === req.user.id) {
         provId = req.user.id;
         seekId = receiver_id;

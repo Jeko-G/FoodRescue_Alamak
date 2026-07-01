@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const Rating = require("../models/Rating");
-const Claim = require("../models/Claim");
-const User = require("../models/User");
-const Notification = require("../models/Notification");
+const Rating = require("../models/rating");
+const Claim = require("../models/claim");
+const User = require("../models/user");
+const Notification = require("../models/notification");
 const { auth } = require("../middleware/auth");
 
 // POST /api/ratings
