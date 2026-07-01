@@ -57,7 +57,7 @@ const UserSchema = new Schema(
     avatar_url: String,
     is_active: { type: Boolean, default: true },
     is_verified: { type: Boolean, default: false },
-    is_profile_complete: { type: Boolean, default: false }, // ← BARU
+    is_profile_complete: { type: Boolean, default: false },
     trust_score: { type: Number, default: 5.0, min: 1, max: 5 },
     total_points: { type: Number, default: 0 },
     last_login_at: Date,

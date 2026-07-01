@@ -81,9 +81,6 @@ const CLAIM_CONFIG = {
   },
 };
 
-// ── Sub-components (class inheritance tidak berlaku di sini,
-//    tapi komponen ini menggunakan komposisi sesuai prinsip React) ──
-
 class BaseCard {
   static defaultStyle = {
     background: "var(--surface)",
@@ -241,6 +238,148 @@ function ActionBtn({ children, onClick, disabled, color, outline }) {
   );
 }
 
+// ── DELETE CONFIRM MODAL ──────────────────────────────────────────────
+function DeleteModal({ onConfirm, onCancel, loading }) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9998,
+          background: "rgba(0,0,0,0.5)",
+          backdropFilter: "blur(6px)",
+        }}
+        onClick={onCancel}
+      />
+      {/* Modal */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 20,
+        }}
+      >
+        <div
+          style={{
+            background: "var(--surface)",
+            border: "1px solid rgba(224,80,80,0.3)",
+            borderRadius: 20,
+            padding: "32px 28px",
+            maxWidth: 380,
+            width: "100%",
+            boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
+            animation: "fadeInUp 0.3s ease-out",
+          }}
+        >
+          <style>{`@keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+          {/* Icon */}
+          <div
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: "50%",
+              background: "rgba(224,80,80,0.1)",
+              border: "1px solid rgba(224,80,80,0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 20px",
+            }}
+          >
+            <i
+              className="bi bi-trash3-fill"
+              style={{ fontSize: 26, color: "#e05050" }}
+            />
+          </div>
+          <h4
+            className="syne-h1"
+            style={{
+              fontSize: 18,
+              color: "var(--txt)",
+              textAlign: "center",
+              marginBottom: 10,
+            }}
+          >
+            Hapus Donasi?
+          </h4>
+          <p
+            style={{
+              fontSize: 13,
+              color: "var(--txt3)",
+              textAlign: "center",
+              lineHeight: 1.7,
+              marginBottom: 24,
+            }}
+          >
+            Donasi yang dihapus tidak bisa dikembalikan. Apakah kamu yakin ingin
+            menghapus donasi ini?
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={onCancel}
+              style={{
+                flex: 1,
+                padding: "10px",
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--txt3)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Batal
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              style={{
+                flex: 1,
+                padding: "10px",
+                borderRadius: 12,
+                border: "none",
+                background: "#e05050",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: loading ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+                opacity: loading ? 0.7 : 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              {loading ? (
+                <>
+                  <div
+                    className="spinner-border spinner-border-sm"
+                    style={{ width: 14, height: 14, borderWidth: 2 }}
+                  />{" "}
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-trash3" /> Ya, Hapus
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 const inputStyle = {
   width: "100%",
   borderRadius: 10,
@@ -278,6 +417,8 @@ function DonationDetail() {
   const [hasRated, setHasRated] = useState(false);
   const [ratingMsg, setRatingMsg] = useState("");
   const [userClaim, setUserClaim] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const userId = user?.id || user?._id;
   const formatDate = (d) =>
@@ -336,6 +477,7 @@ function DonationDetail() {
 
   useEffect(() => {
     fetchDonation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
   useEffect(() => {
     if (donation) {
@@ -343,6 +485,7 @@ function DonationDetail() {
       fetchClaims();
       fetchConversation();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [donation]);
   useEffect(() => {
     if (chatContainerRef.current)
@@ -424,12 +567,15 @@ function DonationDetail() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Hapus donasi ini?")) return;
+    setDeleteLoading(true);
     try {
       await api.delete(`/donations/${id}`);
       navigate("/donations");
     } catch (err) {
       setMsg("error:" + (err.response?.data?.msg || "Gagal hapus donasi"));
+      setShowDeleteModal(false);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -473,24 +619,20 @@ function DonationDetail() {
   const isOwner = userId === donation.provider_id?._id;
   const isProviderRole = user?.role === "food_provider";
   const isOtherProvider = isProviderRole && !isOwner;
-
   const canClaim =
     user &&
     !isProviderRole &&
     !isOwner &&
     ["available", "partially_claimed"].includes(donation.status) &&
     !userClaim;
-
   const canChat =
     user &&
     (isOwner || userClaim) &&
     ["partially_claimed", "fully_claimed", "completed"].includes(
       donation.status,
     );
-
   const canRate =
     user && !isProviderRole && userClaim?.status === "completed" && !hasRated;
-
   const pct =
     donation.quantity > 0
       ? Math.round((donation.quantity_remaining / donation.quantity) * 100)
@@ -502,6 +644,16 @@ function DonationDetail() {
       className="outfit"
       style={{ background: "var(--bg)", minHeight: "100vh" }}
     >
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <DeleteModal
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteModal(false)}
+          loading={deleteLoading}
+        />
+      )}
+
+      {/* Header */}
       <div
         style={{
           background: "var(--surf2)",
@@ -597,7 +749,9 @@ function DonationDetail() {
           alignItems: "start",
         }}
       >
+        {/* Left Column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Photos */}
           <Card style={{ padding: 0, overflow: "hidden" }}>
             {donation.photos?.length > 0 ? (
               <div>
@@ -771,6 +925,7 @@ function DonationDetail() {
             )}
           </Card>
 
+          {/* Info */}
           <Card>
             <div
               style={{
@@ -887,6 +1042,7 @@ function DonationDetail() {
               </p>
             )}
           </Card>
+
           <Card>
             <CardTitle icon="bi-info-circle" title="Informasi Donasi" />
             <InfoRow
@@ -929,7 +1085,10 @@ function DonationDetail() {
             />
           </Card>
         </div>
+
+        {/* Right Column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Provider */}
           <Card>
             <CardTitle icon="bi-person-circle" title="Info Provider" />
             <div
@@ -955,7 +1114,20 @@ function DonationDetail() {
                   flexShrink: 0,
                 }}
               >
-                {donation.provider_id?.first_name?.[0] || "?"}
+                {donation.provider_id?.avatar_url ? (
+                  <img
+                    src={donation.provider_id.avatar_url}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  donation.provider_id?.first_name?.[0] || "?"
+                )}
               </div>
               <div>
                 <p
@@ -1071,8 +1243,7 @@ function DonationDetail() {
                     }}
                   >
                     Kamu adalah <b>Food Provider</b>. Hanya Food Seeker yang
-                    dapat mengklaim donasi ini. Kamu tetap bisa melihat detail
-                    donasi sebagai referensi.
+                    dapat mengklaim donasi ini.
                   </p>
                 </div>
               </div>
@@ -1633,7 +1804,7 @@ function DonationDetail() {
             ["available", "expired", "cancelled"].includes(donation.status) && (
               <Card>
                 <button
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteModal(true)}
                   style={{
                     width: "100%",
                     padding: "9px",

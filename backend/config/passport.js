@@ -8,17 +8,16 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: `${process.env.SERVER_URL}/api/auth/google/callback`,
-      passReqToCallback: true, // ← biar bisa akses req.query.state
+      passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails[0].value.toLowerCase();
-        const state = req.query.state; // "login" atau "register"
+        const state = req.query.state;
 
         let user = await User.findOne({ email });
 
         if (user) {
-          // User sudah ada → update oauth info kalau perlu
           if (user.oauth_provider === "local") {
             user.oauth_provider = "google";
             user.oauth_id = profile.id;
@@ -30,15 +29,11 @@ passport.use(
           return done(null, user);
         }
 
-        // User belum ada
         if (state === "login") {
-          // Dari halaman login → tolak, suruh daftar dulu
-          // Buat dummy user object dengan flag _isNewUser
           const dummyUser = { _isNewUser: true };
           return done(null, dummyUser);
         }
 
-        // Dari halaman register → buat akun baru
         user = await User.create({
           first_name: profile.name.givenName || profile.displayName,
           last_name: profile.name.familyName || "",

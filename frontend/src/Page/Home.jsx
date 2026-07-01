@@ -20,14 +20,13 @@ class Home extends React.Component {
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
         this.setState({
-          userPos: { lat: latitude, lng: longitude, accuracy: accuracy },
+          userPos: { lat: latitude, lng: longitude, accuracy },
           locationLoading: true,
         });
-        if (accuracy > 100) {
+        if (accuracy > 100)
           console.warn("Lokasi kurang akurat:", accuracy, "meter");
-        }
       },
-      (err) => {
+      () => {
         fetch("https://ipapi.co/json/")
           .then((r) => r.json())
           .then((data) => {
@@ -47,12 +46,12 @@ class Home extends React.Component {
               });
             }
           })
-          .catch(() => {
+          .catch(() =>
             this.setState({
               locationError: "Gagal deteksi lokasi",
               locationLoading: false,
-            });
-          });
+            }),
+          );
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
@@ -90,15 +89,21 @@ class Home extends React.Component {
   };
 
   componentDidMount() {
-    api.get("/users/profile").then((res) => {
-      this.setState({ profile: res.data });
-    });
+    api
+      .get("/users/profile")
+      .then((res) => {
+        this.setState({ profile: res.data });
+      })
+      .catch(() => {});
     this.fetchDonation();
     this.tryGetLocation();
   }
 
   render() {
     const isProvider = this.state.profile?.role === "food_provider";
+    const isProfileComplete =
+      this.state.profile?.is_profile_complete ??
+      this.props.auth?.user?.is_profile_complete;
 
     const filteredDonations = this.state.donations.filter((d) => {
       if (this.state.userPos) {
@@ -118,13 +123,80 @@ class Home extends React.Component {
 
     return (
       <div className="container-md outfit position-relative py-4 py-md-5 px-4 px-md-5">
+        {/* ── BANNER LENGKAPI PROFIL ─────────────────────────────── */}
+        {!isProfileComplete && (
+          <div
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(95,139,76,0.12), rgba(184,105,74,0.08))",
+              border: "1px solid rgba(95,139,76,0.35)",
+              borderRadius: 16,
+              padding: "16px 20px",
+              marginBottom: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, var(--g1), var(--g2))",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <i
+                  className="bi bi-person-exclamation"
+                  style={{ color: "#fff", fontSize: 18 }}
+                />
+              </div>
+              <div>
+                <p
+                  className="outfit mb-0"
+                  style={{ fontWeight: 700, fontSize: 14, color: "var(--txt)" }}
+                >
+                  Profil kamu belum lengkap
+                </p>
+                <p
+                  className="outfit mb-0"
+                  style={{ fontSize: 12, color: "var(--txt3)" }}
+                >
+                  Lengkapi profil untuk bisa mengakses semua fitur FoodRescue
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/complete-profile"
+              className="btn btn-green-gradient py-2 px-4 fw-bold outfit"
+              style={{
+                textDecoration: "none",
+                fontSize: 13,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <i className="bi bi-arrow-right-circle me-2" />
+              Lengkapi Sekarang
+            </Link>
+          </div>
+        )}
+
+        {/* ── HERO BANNER ───────────────────────────────────────────── */}
         <div className="p-4 p-md-5 left-signin rounded-4 position-relative grid-detail-light">
           <span
             className="card-transparent text-white fw-semibold py-1 px-2 rounded-5"
             style={{ fontSize: "small" }}
           >
             {(() => {
-              const role = this.state.profile?.role ?? this.props.auth?.user?.role;
+              const role =
+                this.state.profile?.role ?? this.props.auth?.user?.role;
               if (role === "food_provider") return "🍱 Food Provider";
               if (role === "admin") return "⚙️ Admin";
               if (role === "food_seeker") return "🤲 Food Seeker";
@@ -133,7 +205,10 @@ class Home extends React.Component {
           </span>
 
           <h1 className="text-white syne-h1 my-3">
-            Selamat Datang Kembali, {this.state.profile?.first_name ?? this.props.auth?.user?.first_name} 👋
+            Selamat Datang Kembali,{" "}
+            {this.state.profile?.first_name ??
+              this.props.auth?.user?.first_name}{" "}
+            👋
           </h1>
 
           <p className="text-light">
@@ -147,21 +222,35 @@ class Home extends React.Component {
           </p>
 
           <div className="position-relative mt-4 d-flex gap-2">
-            {isProvider && (
-              <Link
-                to="/donations/create"
-                className="btn btn-green-gradient py-2 px-4 fw-bold"
-                style={{
-                  background: "#FFFFFF",
-                  color: "var(--g1)",
-                  textDecoration: "none",
-                }}
-              >
-                <i className="bi bi-gift me-2"></i>
-                Donasi Sekarang
-              </Link>
-            )}
-            {!isProvider && (
+            {isProvider ? (
+              isProfileComplete ? (
+                <Link
+                  to="/donations/create"
+                  className="btn btn-green-gradient py-2 px-4 fw-bold"
+                  style={{
+                    background: "#FFFFFF",
+                    color: "var(--g1)",
+                    textDecoration: "none",
+                  }}
+                >
+                  <i className="bi bi-gift me-2"></i>Donasi Sekarang
+                </Link>
+              ) : (
+                <Link
+                  to="/complete-profile"
+                  className="btn py-2 px-4 fw-bold"
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    color: "#fff",
+                    textDecoration: "none",
+                    border: "1px solid rgba(255,255,255,0.3)",
+                    borderRadius: 8,
+                  }}
+                >
+                  <i className="bi bi-lock me-2"></i>Donasi Sekarang
+                </Link>
+              )
+            ) : isProfileComplete ? (
               <Link
                 to="/donations"
                 className="btn btn-green-gradient py-2 px-4 fw-bold"
@@ -171,8 +260,21 @@ class Home extends React.Component {
                   textDecoration: "none",
                 }}
               >
-                <i className="bi bi-search me-2"></i>
-                Cari Donasi
+                <i className="bi bi-search me-2"></i>Cari Donasi
+              </Link>
+            ) : (
+              <Link
+                to="/complete-profile"
+                className="btn py-2 px-4 fw-bold"
+                style={{
+                  background: "rgba(255,255,255,0.2)",
+                  color: "#fff",
+                  textDecoration: "none",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  borderRadius: 8,
+                }}
+              >
+                <i className="bi bi-lock me-2"></i>Cari Donasi
               </Link>
             )}
             <Link
@@ -180,17 +282,33 @@ class Home extends React.Component {
               to="/donations"
               style={{ textDecoration: "none" }}
             >
-              <i className="bi bi-map me-2"></i>
-              Lihat Peta
+              <i className="bi bi-map me-2"></i>Lihat Peta
             </Link>
           </div>
         </div>
+
+        {/* ── QUICK ACTIONS ─────────────────────────────────────────── */}
         <div className="mt-5 row align-items-center justify-content-center gap-2">
           {isProvider ? (
             <Link
               className="col card-green py-4 px-5 d-flex flex-column gap-1 rounded-4 text-decoration-none align-items-center"
-              to="/donations/create"
+              to={isProfileComplete ? "/donations/create" : "/complete-profile"}
+              style={
+                !isProfileComplete ? { opacity: 0.6, position: "relative" } : {}
+              }
             >
+              {!isProfileComplete && (
+                <i
+                  className="bi bi-lock-fill"
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 10,
+                    fontSize: 11,
+                    color: "var(--txt4)",
+                  }}
+                />
+              )}
               <h1>🍱</h1>
               <p
                 className="text-green1 fw-bold text-nowrap"
@@ -208,8 +326,23 @@ class Home extends React.Component {
           ) : (
             <Link
               className="col card-green py-4 px-5 d-flex flex-column gap-1 rounded-4 text-decoration-none align-items-center"
-              to="/donations"
+              to={isProfileComplete ? "/donations" : "/complete-profile"}
+              style={
+                !isProfileComplete ? { opacity: 0.6, position: "relative" } : {}
+              }
             >
+              {!isProfileComplete && (
+                <i
+                  className="bi bi-lock-fill"
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 10,
+                    fontSize: 11,
+                    color: "var(--txt4)",
+                  }}
+                />
+              )}
               <h1>🔎</h1>
               <p
                 className="text-green1 fw-bold text-nowrap"
@@ -228,8 +361,23 @@ class Home extends React.Component {
 
           <Link
             className="col card-green py-4 px-5 d-flex flex-column gap-1 rounded-4 text-decoration-none align-items-center"
-            to="/messages"
+            to={isProfileComplete ? "/messages" : "/complete-profile"}
+            style={
+              !isProfileComplete ? { opacity: 0.6, position: "relative" } : {}
+            }
           >
+            {!isProfileComplete && (
+              <i
+                className="bi bi-lock-fill"
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 10,
+                  fontSize: 11,
+                  color: "var(--txt4)",
+                }}
+              />
+            )}
             <h1>💬</h1>
             <p
               className="text-green1 fw-bold text-nowrap"
@@ -247,8 +395,23 @@ class Home extends React.Component {
 
           <Link
             className="col card-green py-4 px-5 d-flex flex-column gap-1 rounded-4 text-decoration-none align-items-center"
-            to="/community"
+            to={isProfileComplete ? "/community" : "/complete-profile"}
+            style={
+              !isProfileComplete ? { opacity: 0.6, position: "relative" } : {}
+            }
           >
+            {!isProfileComplete && (
+              <i
+                className="bi bi-lock-fill"
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 10,
+                  fontSize: 11,
+                  color: "var(--txt4)",
+                }}
+              />
+            )}
             <h1>👥</h1>
             <p
               className="text-green1 fw-bold text-nowrap"
@@ -264,6 +427,8 @@ class Home extends React.Component {
             </p>
           </Link>
         </div>
+
+        {/* ── STATS ─────────────────────────────────────────────────── */}
         <div className="w-100 row align-items-center justify-content-center mt-3 g-0 gap-2">
           {isProvider ? (
             <div className="col card-basic py-4 px-5 rounded-4">
@@ -280,14 +445,12 @@ class Home extends React.Component {
               <p className="text-green3 text-nowrap">CLAIM</p>
             </div>
           )}
-
           <div className="col card-basic py-4 px-5 rounded-4">
             <h1 className="syne-h1 text-green1">
               {this.state.profile?.total_points}
             </h1>
             <p className="text-green3 text-nowrap">TOTAL POINS</p>
           </div>
-
           <div className="col card-basic py-4 px-5 rounded-4">
             <h1 className="syne-h1 text-green1">
               {this.state.profile?.trust_score}{" "}
@@ -296,9 +459,10 @@ class Home extends React.Component {
             <p className="text-green3 text-nowrap">RATING KAMU</p>
           </div>
         </div>
+
+        {/* ── DONASI TERSEDIA ───────────────────────────────────────── */}
         <div className="mt-5">
           <h4 className="syne-h1 text-green1 mb-3">Donasi Tersedia Sekarang</h4>
-
           {filteredDonations.length === 0 ? (
             <div className="text-center py-5">
               <i className="bi bi-basket2 display-3 text-green4"></i>
@@ -420,7 +584,6 @@ class Home extends React.Component {
                       >
                         {d.title}
                       </h6>
-
                       <div
                         style={{
                           display: "flex",
@@ -460,7 +623,6 @@ class Home extends React.Component {
                           </span>
                         )}
                       </div>
-
                       <div style={{ flex: 1 }}>
                         <div
                           style={{
@@ -568,7 +730,6 @@ class Home extends React.Component {
                           </span>
                         </div>
                       </div>
-
                       <Link
                         to={`/donations/${d._id}`}
                         className="btn-green-gradient"

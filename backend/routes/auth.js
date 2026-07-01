@@ -255,8 +255,36 @@ router.post("/complete-profile", auth, async (req, res) => {
     user.username = username.toLowerCase();
     user.city = city;
     if (phone) user.phone = phone;
+    const wasComplete = user.is_profile_complete;
+    if (!wasComplete) {
+      user.total_points = (user.total_points || 0) + 30;
+    }
     user.is_profile_complete = true;
     await user.save();
+
+    // Notif +30 poin complete profile (sekali)
+    if (!wasComplete) {
+      try {
+        const Notification = require("../models/Notification");
+        await Notification.create({
+          user_id: user._id,
+          type: "donation_completed",
+          title: "🎉 +30 Poin!",
+          body: "Profil kamu sudah lengkap! Kamu mendapat 30 poin bonus.",
+          reference_type: "user",
+          reference_id: user._id,
+        });
+        const io = req.app.get("io");
+        if (io) {
+          io.emit("push_notification", {
+            title: "🎉 +30 Poin!",
+            body: "Profil kamu sudah lengkap! Kamu mendapat 30 poin bonus.",
+            type: "donation_completed",
+            for_user: user._id.toString(),
+          });
+        }
+      } catch (e) {}
+    }
 
     const token = jwt.sign(
       { id: user._id, role: user.role },

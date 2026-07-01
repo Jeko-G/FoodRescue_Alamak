@@ -1,3 +1,4 @@
+import { getBadge as getUserBadge } from "../utils/badgeHelper";
 import React from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from "../Wrapper/withRouter";
@@ -14,6 +15,7 @@ const providerLinks = [
     badgeKey: "messages",
   },
   { to: "/community", icon: "bi-people", label: "Komunitas" },
+  { to: "/leaderboard", icon: "bi-trophy", label: "Leaderboard" },
   { to: "/donations/create", icon: "bi-plus-circle", label: "Buat Donasi" },
 ];
 
@@ -28,6 +30,7 @@ const seekerLinks = [
     badgeKey: "messages",
   },
   { to: "/community", icon: "bi-people", label: "Komunitas" },
+  { to: "/leaderboard", icon: "bi-trophy", label: "Leaderboard" },
 ];
 
 const adminLinks = [
@@ -366,7 +369,23 @@ class NavBar extends React.Component {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {user.first_name} {user.last_name}
+                  {(() => {
+                    const badge = getUserBadge(user.total_points || 0);
+                    return (
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <span title={badge.level} style={{ fontSize: 14 }}>
+                          {badge.emoji}
+                        </span>
+                        {user.first_name} {user.last_name}
+                      </span>
+                    );
+                  })()}
                 </span>
               </Link>
             ) : (
@@ -510,7 +529,23 @@ class NavBar extends React.Component {
                   >
                     <i className="bi bi-person-fill" />
                   </div>
-                  {user.first_name} {user.last_name}
+                  {(() => {
+                    const badge = getUserBadge(user.total_points || 0);
+                    return (
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <span title={badge.level} style={{ fontSize: 14 }}>
+                          {badge.emoji}
+                        </span>
+                        {user.first_name} {user.last_name}
+                      </span>
+                    );
+                  })()}
                 </Link>
               ) : (
                 <div className="d-flex gap-2">

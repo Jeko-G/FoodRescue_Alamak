@@ -22,16 +22,20 @@ router.post("/", auth, async (req, res) => {
       return res.status(400).json({ msg: "Tidak bisa klaim donasi sendiri" });
     }
     if (quantity_claimed > donation.quantity_remaining) {
-      return res.status(400).json({
-        msg: `Stok tersisa hanya ${donation.quantity_remaining} ${donation.quantity_unit}`,
-      });
+      return res
+        .status(400)
+        .json({
+          msg: `Stok tersisa hanya ${donation.quantity_remaining} ${donation.quantity_unit}`,
+        });
     }
 
     const MAX_CLAIM = 1;
     if (quantity_claimed > MAX_CLAIM) {
-      return res.status(400).json({
-        msg: `Maksimal klaim ${MAX_CLAIM} ${donation.quantity_unit} per orang`,
-      });
+      return res
+        .status(400)
+        .json({
+          msg: `Maksimal klaim ${MAX_CLAIM} ${donation.quantity_unit} per orang`,
+        });
     }
 
     const existing = await Claim.findOne({
@@ -65,6 +69,7 @@ router.post("/", auth, async (req, res) => {
 
     const io = req.app.get("io");
 
+    // Notif ke provider
     await Notification.create({
       user_id: donation.provider_id,
       type: "donation_claimed",
@@ -80,6 +85,7 @@ router.post("/", auth, async (req, res) => {
       for_user: donation.provider_id.toString(),
     });
 
+    // Notif klaim berhasil ke seeker
     await Notification.create({
       user_id: req.user.id,
       type: "claim_confirmed",
@@ -91,6 +97,25 @@ router.post("/", auth, async (req, res) => {
     io.emit("push_notification", {
       title: "Klaim Berhasil! ✅",
       body: `Kamu berhasil mengklaim "${donation.title}"`,
+      type: "claim_confirmed",
+      for_user: req.user.id,
+    });
+
+    // +10 poin untuk seeker
+    await User.findByIdAndUpdate(req.user.id, { $inc: { total_points: 10 } });
+
+    // Notif +10 poin
+    await Notification.create({
+      user_id: req.user.id,
+      type: "claim_confirmed",
+      title: "⚡ +10 Poin!",
+      body: `Kamu mendapat 10 poin dari klaim donasi "${donation.title}"!`,
+      reference_type: "claim",
+      reference_id: claim._id,
+    });
+    io.emit("push_notification", {
+      title: "⚡ +10 Poin!",
+      body: `Kamu mendapat 10 poin dari klaim donasi "${donation.title}"!`,
       type: "claim_confirmed",
       for_user: req.user.id,
     });

@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import { useAuth } from "../Context/AuthContext";
+import { getBadge, getNextBadge } from "../utils/badgeHelper";
 
 function Profile() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({
@@ -208,6 +209,45 @@ function Profile() {
                   @{profile.username}
                 </p>
               )}
+
+              {/* Badge Level */}
+              {(() => {
+                const badge = getBadge(profile.total_points || 0);
+                const next = getNextBadge(profile.total_points || 0);
+                return (
+                  <div style={{ marginBottom: 8 }}>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "4px 12px",
+                        borderRadius: 999,
+                        background: badge.bgColor,
+                        border: `1px solid ${badge.borderColor}`,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: badge.color,
+                      }}
+                    >
+                      {badge.emoji} {badge.level}
+                    </span>
+                    {next && (
+                      <p
+                        style={{
+                          fontSize: 10,
+                          color: "var(--txt4)",
+                          marginTop: 4,
+                          marginBottom: 0,
+                        }}
+                      >
+                        {next.needed} poin lagi untuk {next.emoji} {next.level}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+
               <span
                 className="badge-green"
                 style={{

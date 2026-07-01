@@ -3,6 +3,8 @@ const router = express.Router();
 const multer = require("multer");
 const Donation = require("../models/Donation");
 const FoodCategory = require("../models/FoodCategory");
+const User = require("../models/User");
+const Notification = require("../models/Notification");
 const { auth, requireRole } = require("../middleware/auth");
 
 const cloudinary = require("../config/cloudinary");
@@ -87,9 +89,8 @@ router.post(
   requireRole("food_provider", "admin"),
   (req, res, next) => {
     upload.array("photos", 5)(req, res, (err) => {
-      if (err) {
+      if (err)
         return res.status(400).json({ msg: err.message, field: err.field });
-      }
       next();
     });
   },
@@ -118,10 +119,7 @@ router.post(
         return res.status(400).json({ msg: "Kategori tidak valid" });
 
       const photos = req.files
-        ? req.files.map((f, i) => ({
-            photo_url: f.path,
-            sort_order: i,
-          }))
+        ? req.files.map((f, i) => ({ photo_url: f.path, sort_order: i }))
         : [];
 
       const donation = new Donation({
@@ -153,6 +151,31 @@ router.post(
       });
 
       await donation.save();
+
+      // +50 poin untuk provider
+      await User.findByIdAndUpdate(req.user.id, {
+        $inc: { total_points: 50, "profile.total_donations": 1 },
+      });
+
+      // Simpan notifikasi ke DB
+      await Notification.create({
+        user_id: req.user.id,
+        type: "donation_completed",
+        title: "🎉 +50 Poin!",
+        body: `Terima kasih telah mendonasikan "${title}". Kamu mendapat 50 poin!`,
+        reference_type: "donation",
+        reference_id: donation._id,
+      });
+
+      // Emit socket ke user
+      const io = req.app.get("io");
+      io.emit("push_notification", {
+        title: "🎉 +50 Poin!",
+        body: `Terima kasih telah mendonasikan "${title}". Kamu mendapat 50 poin!`,
+        type: "donation_completed",
+        for_user: req.user.id,
+      });
+
       res.status(201).json({ msg: "Donasi berhasil dibuat!", donation });
     } catch (err) {
       res.status(500).json({ msg: "Server error", error: err.message });
