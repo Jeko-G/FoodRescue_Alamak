@@ -491,6 +491,7 @@ function CreateDonation() {
               </div>
 
               <div
+                className="form-grid-2col"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
@@ -528,6 +529,7 @@ function CreateDonation() {
               </div>
 
               <div
+                className="form-grid-2col"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
@@ -590,6 +592,7 @@ function CreateDonation() {
               <SectionTitle icon="bi-geo-alt" title="Lokasi Pickup" />
 
               <div
+                className="form-grid-2col"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "2fr 1fr",
@@ -678,6 +681,7 @@ function CreateDonation() {
               </div>
 
               <div
+                className="form-grid-2col"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",

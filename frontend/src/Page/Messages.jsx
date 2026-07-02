@@ -440,6 +440,7 @@ function Messages() {
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
         {/* ── SIDEBAR ── */}
         <div
+          className={`messages-sidebar${active ? " messages-pane-hidden-mobile" : ""}`}
           style={{
             width: 300,
             flexShrink: 0,
@@ -660,6 +661,7 @@ function Messages() {
 
         {/* ── CHAT AREA ── */}
         <div
+          className={`messages-chatarea${!active ? " messages-pane-hidden-mobile" : ""}`}
           style={{
             flex: 1,
             display: "flex",
@@ -722,6 +724,32 @@ function Messages() {
                   boxShadow: "var(--shadow)",
                 }}
               >
+                <button
+                  className="messages-back-btn"
+                  onClick={() => {
+                    if (active?._id) {
+                      socket.emit("leave_conversation", active._id);
+                    }
+                    setActive(null);
+                  }}
+                  style={{
+                    display: "none",
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    border: "1px solid var(--border)",
+                    background: "var(--g5)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    cursor: "pointer",
+                  }}
+                >
+                  <i
+                    className="bi bi-arrow-left"
+                    style={{ fontSize: 16, color: "var(--txt2)" }}
+                  />
+                </button>
                 <div style={{ position: "relative", flexShrink: 0 }}>
                   <div
                     style={{

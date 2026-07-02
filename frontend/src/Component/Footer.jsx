@@ -35,7 +35,7 @@ class Footer extends React.Component {
   render() {
     return (
       <footer
-        className="lp-container-pad"
+        className="footer-pad"
         style={{
           borderTop: "1px solid var(--border)",
           backgroundColor: "var(--surface)",
@@ -131,6 +131,7 @@ class Footer extends React.Component {
 
         {/* Bottom Bar */}
         <div
+          className="lp-footer-row"
           style={{
             borderTop: "1px solid var(--border)",
             paddingTop: 20,

@@ -138,9 +138,9 @@ function Community() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   const handleSubmitPost = async (e) => {
@@ -414,6 +414,7 @@ function Community() {
             </div>
 
             <div
+              className="community-form-row"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 2fr",
@@ -455,6 +456,7 @@ function Community() {
             />
 
             <div
+              className="community-form-row"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr auto",
@@ -536,6 +538,7 @@ function Community() {
 
         {/* Content */}
         <div
+          className="community-content-grid"
           style={{
             display: "grid",
             gridTemplateColumns: activePost ? "1fr 1fr" : "1fr",
@@ -544,7 +547,9 @@ function Community() {
           }}
         >
           {/* Post List */}
-          <div>
+          <div
+            className={`community-post-list${activePost ? " community-pane-hidden-mobile" : ""}`}
+          >
             {loading ? (
               <div
                 style={{
@@ -774,6 +779,7 @@ function Community() {
           {/* Detail Panel */}
           {activePost && (
             <div
+              className="community-detail-panel"
               style={{
                 background: "var(--surface)",
                 border: "1px solid var(--border)",

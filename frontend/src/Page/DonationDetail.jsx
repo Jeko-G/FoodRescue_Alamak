@@ -739,6 +739,7 @@ function DonationDetail() {
       )}
 
       <div
+        className="donation-detail-grid"
         style={{
           maxWidth: 1100,
           margin: "0 auto",

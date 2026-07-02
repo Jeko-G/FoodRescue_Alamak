@@ -472,7 +472,7 @@ class Home extends React.Component {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
+                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
                 gap: 10,
               }}
             >

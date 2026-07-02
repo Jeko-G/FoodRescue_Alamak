@@ -8,10 +8,15 @@ class MainLayout extends React.Component {
   render() {
     return (
       <>
-        <div className="position-relative grid-detail-responsive main-bg-color">
+        <div
+          className="position-relative grid-detail-responsive main-bg-color"
+          style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+        >
           <NavBar />
           <ToastNotification />
-          <Outlet />
+          <div style={{ flex: 1 }}>
+            <Outlet />
+          </div>
           <Footer />
         </div>
       </>

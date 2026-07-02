@@ -24,7 +24,9 @@
     "passport-google-oauth20": "^2.0.0",
     "path": "^0.12.7",
     "router": "^2.2.0",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

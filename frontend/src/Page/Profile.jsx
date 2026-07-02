@@ -604,6 +604,7 @@ function Profile() {
                 style={{ display: "flex", flexDirection: "column", gap: 14 }}
               >
                 <div
+                  className="form-grid-2col"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",

@@ -75,9 +75,9 @@ function Donations() {
     );
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchDonations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -562,6 +562,7 @@ function Donations() {
                   )}
                 </div>
                 <div
+                  className="donations-filter-grid"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "2fr 1fr 1fr 1fr",
@@ -767,7 +768,8 @@ function Donations() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(240px, 1fr))",
                     gap: 10,
                   }}
                 >

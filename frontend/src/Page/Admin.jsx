@@ -1058,6 +1058,7 @@ function Admin() {
               </div>
               <form onSubmit={addCategory}>
                 <div
+                  className="adm-form-grid"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr 120px 100px",
