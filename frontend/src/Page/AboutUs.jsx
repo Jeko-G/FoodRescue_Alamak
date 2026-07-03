@@ -161,7 +161,7 @@ class AboutMission extends React.Component {
     return (
       <section className="about-mission">
         <div className="container-md px-4 px-md-5">
-          <div className="row g-5 align-items-center">
+          <div className="row g-5 align-items-start">
             <div className="col-12 col-md-6">
               <div className="about-badge">
                 <i className="bi bi-bullseye"></i> Misi Kami
@@ -269,7 +269,7 @@ class AboutTeam extends React.Component {
           <div className="row g-3 justify-content-center">
             {teamData.map((member, index) => (
               <div key={index} className="col-6 col-md-3">
-                <div className="about-member-card position-relative">
+                <div className="about-member-card h-100 position-relative">
                   <div
                     className="about-member-card__avatar"
                     style={{ background: member.avatarBg }}
@@ -389,19 +389,21 @@ const AboutCta = () => {
             Yuk jadi bagian dari solusi dan bantu kurangi food waste bersama
             kami.
           </p>
-          <button
-            onClick={() => navigate("/contact")}
-            className="btn-green-gradient px-4 py-2 rounded-3 d-inline-flex align-items-center gap-2 outfit fw-bold"
-          >
-            <i className="bi bi-envelope-fill"></i> Hubungi Kami
-          </button>
+          <div className="d-flex flex-wrap justify-content-center gap-3">
+            <button
+              onClick={() => navigate("/contact")}
+              className="btn-green-gradient px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 outfit fw-bold"
+            >
+              <i className="bi bi-envelope-fill"></i> Hubungi Kami
+            </button>
 
-          <button
-            onClick={() => navigate("/register")}
-            className="btn-outline-green px-4 py-2 rounded-3 d-inline-flex align-items-center gap-2 outfit fw-bold ms-3"
-          >
-            <i className="bi bi-person-plus"></i> Daftar Gratis
-          </button>
+            <button
+              onClick={() => navigate("/register")}
+              className="btn-outline-green px-4 py-2 rounded-3 d-inline-flex align-items-center justify-content-center gap-2 outfit fw-bold"
+            >
+              <i className="bi bi-person-plus"></i> Daftar Gratis
+            </button>
+          </div>
         </div>
       </div>
     </section>

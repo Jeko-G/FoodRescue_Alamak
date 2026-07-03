@@ -35,6 +35,24 @@ const injectAdminStyles = () => {
       border-radius:2px;
     }
 
+    /* Di layar lebar (tablet ke atas), tab full dari kiri ke kanan */
+    @media (min-width: 700px) {
+      .adm-tab-row .adm-tab {
+        flex: 1 1 0;
+        text-align: center;
+        justify-content: center;
+      }
+    }
+    /* Di HP, tab natural (sesuai teks) + bisa di-scroll horizontal */
+    @media (max-width: 699px) {
+      .adm-tab-row {
+        -webkit-overflow-scrolling: touch;
+      }
+      .adm-tab-row .adm-tab {
+        flex: 0 0 auto;
+      }
+    }
+
     .adm-stat-card {
       position: relative; overflow: hidden;
       background: var(--surface); border: 1px solid var(--border);
@@ -324,25 +342,25 @@ function Admin() {
           label: "Total Donasi",
           value: stats.totalDonations,
           icon: "bi-gift-fill",
-          accent: "#5f8b4c",
+          accent: "#7c5cbf",
         },
         {
           label: "Donasi Tersedia",
           value: stats.availableDonations,
           icon: "bi-check-circle-fill",
-          accent: "#7aaf60",
+          accent: "#4eb8d4",
         },
         {
           label: "Donasi Selesai",
           value: stats.completedDonations,
           icon: "bi-trophy-fill",
-          accent: "#c8900a",
+          accent: "#d1477a",
         },
         {
           label: "Total Klaim",
           value: stats.totalClaims,
           icon: "bi-hand-index-fill",
-          accent: "#1e7ab8",
+          accent: "#2f9e8f",
         },
         {
           label: "Laporan Pending",
@@ -354,7 +372,7 @@ function Admin() {
           label: "Post Komunitas",
           value: stats.totalPosts,
           icon: "bi-chat-square-dots-fill",
-          accent: "#5f8b4c",
+          accent: "#b8694a",
         },
       ]
     : [];
@@ -479,6 +497,7 @@ function Admin() {
 
           {/* Tab row */}
           <div
+            className="adm-tab-row"
             style={{
               display: "flex",
               gap: 2,

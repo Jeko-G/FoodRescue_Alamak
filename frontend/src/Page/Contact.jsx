@@ -1,5 +1,21 @@
 import React, { Component } from "react";
 
+// Sisipin titik potong (word break opportunity) di tempat yang enak diliat,
+// biar kalau kepanjangan & harus wrap, motongnya abis "@" bukan asal tengah kata
+const breakable = (text) => {
+  const parts = String(text).split(/([@.])/);
+  return parts.map((part, i) =>
+    part === "@" || part === "." ? (
+      <React.Fragment key={i}>
+        {part}
+        <wbr />
+      </React.Fragment>
+    ) : (
+      part
+    ),
+  );
+};
+
 class Contact extends Component {
   constructor(props) {
     super(props);
@@ -339,6 +355,7 @@ class Contact extends Component {
                 <div key={card.key} className="col-lg-5 col-md-6">
                   <div
                     onClick={() => this.toggleInfo(card.key)}
+                    className="h-100"
                     style={{
                       background:
                         activeInfo === card.key
@@ -387,14 +404,15 @@ class Contact extends Component {
                       {card.label}
                     </p>
                     <p
-                      className="syne-h1"
+                      className="syne-h1 contact-value-text"
                       style={{
-                        fontSize: 15,
                         color: "var(--txt)",
                         marginBottom: 4,
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
                       }}
                     >
-                      {card.value}
+                      {breakable(card.value)}
                     </p>
                     <p
                       style={{

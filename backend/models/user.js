@@ -55,6 +55,8 @@ const UserSchema = new Schema(
     },
     city: String,
     avatar_url: String,
+    // true kalau avatar di-upload manual sama user, false kalau masih ikutan foto Google
+    avatar_is_custom: { type: Boolean, default: false },
     is_active: { type: Boolean, default: true },
     is_verified: { type: Boolean, default: false },
     is_profile_complete: { type: Boolean, default: false },

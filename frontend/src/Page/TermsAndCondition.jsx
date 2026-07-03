@@ -1,172 +1,76 @@
 import React, { Component } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../Context/AuthContext";
 
-// ─── Sidebar nav items ────────────────────────────────────────────────────────
+// Sisipin titik potong (word break opportunity) di tempat yang enak diliat,
+// biar kalau kepanjangan & harus wrap, motongnya abis "@" bukan asal tengah kata
+const breakable = (text) => {
+  const parts = String(text).split(/([@.])/);
+  return parts.map((part, i) =>
+    part === "@" || part === "." ? (
+      <React.Fragment key={i}>
+        {part}
+        <wbr />
+      </React.Fragment>
+    ) : (
+      part
+    ),
+  );
+};
+
 const navItems = [
   {
-    key: "penerimaan",
-    icon: "bi bi-check-circle-fill",
-    label: "Penerimaan Syarat",
+    key: "pengumpulan",
+    icon: "bi bi-database-fill",
+    label: "Pengumpulan Data",
   },
-  { key: "akun", icon: "bi bi-person-badge-fill", label: "Akun & Pendaftaran" },
+  { key: "penggunaan", icon: "bi bi-gear-fill", label: "Penggunaan Data" },
+  { key: "berbagi", icon: "bi bi-share-fill", label: "Berbagi Data" },
+  { key: "keamanan", icon: "bi bi-shield-fill-check", label: "Keamanan Data" },
+  { key: "hak", icon: "bi bi-person-check-fill", label: "Hak Pengguna" },
+  { key: "cookie", icon: "bi bi-browser-chrome", label: "Cookie" },
   {
-    key: "penggunaan",
-    icon: "bi bi-hand-index-thumb-fill",
-    label: "Penggunaan Layanan",
+    key: "perubahan",
+    icon: "bi bi-arrow-clockwise",
+    label: "Perubahan Kebijakan",
   },
-  {
-    key: "konten",
-    icon: "bi bi-file-earmark-text-fill",
-    label: "Konten & Donasi",
-  },
-  {
-    key: "larangan",
-    icon: "bi bi-slash-circle-fill",
-    label: "Larangan Penggunaan",
-  },
-  {
-    key: "tanggung",
-    icon: "bi bi-shield-exclamation",
-    label: "Tanggung Jawab",
-  },
-  { key: "haki", icon: "bi bi-award-fill", label: "Hak Kekayaan Intelektual" },
-  {
-    key: "penghentian",
-    icon: "bi bi-x-octagon-fill",
-    label: "Penghentian Akun",
-  },
-  { key: "hukum", icon: "bi bi-bank2", label: "Hukum yang Berlaku" },
   { key: "kontak", icon: "bi bi-envelope-fill", label: "Hubungi Kami" },
 ];
 
+const commitmentItems = [
+  { icon: "bi bi-ban", text: "Tidak menjual data Anda" },
+  { icon: "bi bi-lock", text: "Enkripsi end-to-end" },
+  { icon: "bi bi-person-x", text: "Hapus akun kapan saja" },
+  { icon: "bi bi-eye", text: "Transparan & terbuka" },
+];
+
 const heroTags = [
-  { icon: "bi bi-calendar3", text: "Berlaku: April 2026" },
-  { icon: "bi bi-file-earmark-text", text: "Versi 1.0" },
+  { icon: "bi bi-calendar3", text: "Terakhir diperbarui: April 2026" },
+  { icon: "bi bi-file-text", text: "Versi 2.0" },
   { icon: "bi bi-translate", text: "Bahasa Indonesia" },
 ];
 
-const highlightItems = [
-  { icon: "bi bi-people-fill", text: "Untuk semua pengguna" },
-  { icon: "bi bi-heart-fill", text: "Platform nirlaba" },
-  { icon: "bi bi-globe", text: "Berlaku di Indonesia" },
-  { icon: "bi bi-patch-check-fill", text: "Diperbarui berkala" },
-];
-
-// ─── Section Components ───────────────────────────────────────────────────────
-
-class SectionPenerimaan extends Component {
+class SectionPengumpulan extends Component {
   render() {
-    return (
-      <>
-        <p
-          className="outfit"
-          style={{
-            fontSize: 14,
-            color: "var(--txt3)",
-            lineHeight: 1.8,
-            marginBottom: 16,
-          }}
-        >
-          Dengan mengakses atau menggunakan platform FoodRescue — baik melalui
-          aplikasi web maupun mobile — Anda menyatakan telah membaca, memahami,
-          dan menyetujui seluruh Syarat dan Ketentuan yang berlaku.
-        </p>
-        <div className="d-flex flex-column gap-2">
-          {[
-            {
-              icon: "bi bi-check2-circle",
-              color: "var(--g1)",
-              bg: "var(--g5)",
-              title: "Pengguna Terdaftar",
-              desc: "Pengguna yang mendaftar dan membuat akun di FoodRescue wajib menyetujui syarat ini sebelum menggunakan layanan.",
-            },
-            {
-              icon: "bi bi-check2-circle",
-              color: "var(--cr1)",
-              bg: "var(--cr4)",
-              title: "Pengunjung Tidak Terdaftar",
-              desc: "Bahkan tanpa akun, mengakses atau menjelajahi platform berarti Anda setuju dengan syarat penggunaan yang berlaku.",
-            },
-            {
-              icon: "bi bi-check2-circle",
-              color: "#1e7ab8",
-              bg: "rgba(30,122,184,0.08)",
-              title: "Batas Usia Minimum",
-              desc: "Layanan FoodRescue hanya diperuntukkan bagi individu yang telah berusia minimal 17 tahun atau memiliki izin orang tua/wali.",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="card-basic rounded-3 p-3 d-flex gap-3 align-items-start"
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: item.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <i className={item.icon} style={{ color: item.color }} />
-              </div>
-              <div>
-                <p
-                  className="syne-h1"
-                  style={{
-                    fontSize: 13,
-                    color: "var(--txt2)",
-                    marginBottom: 3,
-                  }}
-                >
-                  {item.title}
-                </p>
-                <p
-                  className="outfit"
-                  style={{
-                    fontSize: 13,
-                    color: "var(--txt3)",
-                    lineHeight: 1.65,
-                    margin: 0,
-                  }}
-                >
-                  {item.desc}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  }
-}
-
-class SectionAkun extends Component {
-  render() {
-    const items = [
+    const cards = [
       {
-        num: "01",
-        title: "Akurasi Informasi",
-        desc: "Anda wajib memberikan informasi yang akurat, lengkap, dan terkini saat mendaftar. Informasi palsu dapat menyebabkan penonaktifan akun.",
+        icon: "bi bi-person-fill",
+        title: "Data Identitas",
+        desc: "Nama lengkap, alamat email, nomor telepon, dan foto profil yang Anda berikan saat mendaftar.",
       },
       {
-        num: "02",
-        title: "Keamanan Akun",
-        desc: "Anda bertanggung jawab penuh atas kerahasiaan kata sandi dan seluruh aktivitas yang terjadi di bawah akun Anda.",
+        icon: "bi bi-geo-alt-fill",
+        title: "Data Lokasi",
+        desc: "Informasi lokasi pertanian atau wilayah kerja untuk mencocokkan layanan yang relevan di sekitar Anda.",
       },
       {
-        num: "03",
-        title: "Satu Akun Per Pengguna",
-        desc: "Setiap individu hanya diperbolehkan memiliki satu akun aktif. Pembuatan akun ganda untuk menghindari pembatasan tidak diizinkan.",
+        icon: "bi bi-activity",
+        title: "Data Aktivitas",
+        desc: "Riwayat transaksi, ulasan yang diberikan, dan interaksi dalam platform kami.",
       },
       {
-        num: "04",
-        title: "Verifikasi Identitas",
-        desc: "FoodRescue berhak meminta verifikasi tambahan kapan saja untuk memastikan keamanan platform dan seluruh penggunanya.",
+        icon: "bi bi-phone-fill",
+        title: "Data Perangkat",
+        desc: "Jenis perangkat, sistem operasi, alamat IP, dan data teknis lainnya untuk keamanan akun.",
       },
     ];
     return (
@@ -180,8 +84,101 @@ class SectionAkun extends Component {
             marginBottom: 16,
           }}
         >
-          Untuk menggunakan fitur lengkap FoodRescue, Anda perlu membuat akun.
-          Berikut adalah ketentuan yang mengatur pembuatan dan pengelolaan akun:
+          FoodRescue mengumpulkan berbagai jenis informasi untuk memberikan
+          layanan terbaik. Informasi yang kami kumpulkan meliputi:
+        </p>
+        <div className="row g-3">
+          {cards.map((c) => (
+            <div className="col-12 col-sm-6" key={c.title}>
+              <div className="card-basic rounded-3 p-3 d-flex gap-3 align-items-start h-100">
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "var(--g5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <i className={c.icon} style={{ color: "var(--g1)" }} />
+                </div>
+                <div>
+                  <p
+                    className="syne-h1"
+                    style={{
+                      fontSize: 13,
+                      color: "var(--txt2)",
+                      marginBottom: 3,
+                    }}
+                  >
+                    {c.title}
+                  </p>
+                  <p
+                    className="outfit"
+                    style={{
+                      fontSize: 12,
+                      color: "var(--txt4)",
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    {c.desc}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
+}
+
+class SectionPenggunaan extends Component {
+  render() {
+    const items = [
+      {
+        num: "01",
+        title: "Menyediakan & Meningkatkan Layanan",
+        desc: "Memproses pendaftaran, menampilkan profil, memfasilitasi transaksi, dan terus mengembangkan fitur platform.",
+      },
+      {
+        num: "02",
+        title: "Komunikasi & Notifikasi",
+        desc: "Mengirim konfirmasi pesanan, pembaruan layanan, pengingat, dan informasi penting seputar akun Anda.",
+      },
+      {
+        num: "03",
+        title: "Personalisasi Pengalaman",
+        desc: "Merekomendasikan layanan yang relevan berdasarkan lokasi, riwayat, dan preferensi Anda.",
+      },
+      {
+        num: "04",
+        title: "Keamanan & Pencegahan Penipuan",
+        desc: "Mendeteksi aktivitas mencurigakan, melindungi akun, dan memastikan keamanan seluruh pengguna.",
+      },
+      {
+        num: "05",
+        title: "Analitik & Pengembangan",
+        desc: "Memahami pola penggunaan untuk meningkatkan kualitas layanan dan pengalaman pengguna secara keseluruhan.",
+      },
+    ];
+    return (
+      <>
+        <p
+          className="outfit"
+          style={{
+            fontSize: 14,
+            color: "var(--txt3)",
+            lineHeight: 1.8,
+            marginBottom: 16,
+          }}
+        >
+          Informasi yang kami kumpulkan digunakan secara bertanggung jawab untuk
+          tujuan berikut:
         </p>
         <div className="d-flex flex-column gap-2">
           {items.map((item) => (
@@ -232,135 +229,28 @@ class SectionAkun extends Component {
   }
 }
 
-class SectionPenggunaan extends Component {
+class SectionBerbagi extends Component {
   render() {
-    const cards = [
+    const items = [
       {
-        icon: "bi bi-gift-fill",
-        title: "Donasi Makanan",
-        desc: "Pengguna dapat mengunggah informasi makanan yang ingin didonasikan secara gratis kepada sesama.",
+        icon: "🤝",
+        title: "Penyedia Layanan Terpercaya",
+        desc: "Mitra teknis seperti penyedia hosting, layanan pembayaran, dan analitik yang terikat perjanjian kerahasiaan ketat.",
       },
       {
-        icon: "bi bi-search",
-        title: "Cari & Klaim",
-        desc: "Pengguna dapat mencari donasi makanan yang tersedia dan mengklaimnya sesuai kebutuhan.",
+        icon: "⚖️",
+        title: "Kewajiban Hukum",
+        desc: "Apabila diwajibkan oleh hukum, regulasi, atau perintah pengadilan yang sah di wilayah hukum Indonesia.",
       },
       {
-        icon: "bi bi-chat-dots-fill",
-        title: "Komunikasi",
-        desc: "Platform menyediakan fitur pesan untuk koordinasi antara pemberi dan penerima donasi.",
+        icon: "🛡️",
+        title: "Perlindungan Hak & Keamanan",
+        desc: "Untuk melindungi hak, properti, atau keselamatan FoodRescue, pengguna kami, atau publik sesuai peraturan yang berlaku.",
       },
-      {
-        icon: "bi bi-people-fill",
-        title: "Komunitas",
-        desc: "Bergabung dan berkontribusi dalam komunitas untuk berbagi tips, pengalaman, dan inspirasi.",
-      },
-    ];
-    return (
-      <>
-        <p
-          className="outfit"
-          style={{
-            fontSize: 14,
-            color: "var(--txt3)",
-            lineHeight: 1.8,
-            marginBottom: 16,
-          }}
-        >
-          FoodRescue adalah platform nirlaba yang menghubungkan pemberi dan
-          penerima donasi makanan. Layanan yang tersedia meliputi:
-        </p>
-        <div className="row g-3 mb-3">
-          {cards.map((c) => (
-            <div className="col-12 col-sm-6" key={c.title}>
-              <div className="card-basic rounded-3 p-3 d-flex gap-3 align-items-start h-100">
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    background: "var(--g5)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <i className={c.icon} style={{ color: "var(--g1)" }} />
-                </div>
-                <div>
-                  <p
-                    className="syne-h1"
-                    style={{
-                      fontSize: 13,
-                      color: "var(--txt2)",
-                      marginBottom: 3,
-                    }}
-                  >
-                    {c.title}
-                  </p>
-                  <p
-                    className="outfit"
-                    style={{
-                      fontSize: 12,
-                      color: "var(--txt4)",
-                      lineHeight: 1.6,
-                      margin: 0,
-                    }}
-                  >
-                    {c.desc}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="card-cream rounded-3 p-3 d-flex gap-2 align-items-start">
-          <i
-            className="bi bi-info-circle-fill"
-            style={{ color: "var(--cr1)", marginTop: 2 }}
-          />
-          <p
-            className="outfit"
-            style={{
-              fontSize: 13,
-              color: "var(--txt3)",
-              margin: 0,
-              lineHeight: 1.7,
-            }}
-          >
-            Seluruh layanan FoodRescue bersifat gratis untuk pengguna akhir.
-            Kami tidak memungut biaya atas setiap transaksi donasi yang terjadi
-            di platform.
-          </p>
-        </div>
-      </>
-    );
-  }
-}
-
-class SectionKonten extends Component {
-  render() {
-    const rules = [
       {
         icon: "✅",
-        title: "Informasi Akurat",
-        desc: "Pastikan detail makanan yang diunggah akurat: nama, deskripsi, foto, jumlah, dan tanggal kedaluwarsa.",
-      },
-      {
-        icon: "📸",
-        title: "Foto Jelas",
-        desc: "Unggah foto asli dan representatif dari makanan yang akan didonasikan, bukan gambar dari internet.",
-      },
-      {
-        icon: "⏰",
-        title: "Masa Berlaku",
-        desc: "Makanan yang didonasikan harus masih layak konsumsi dan memiliki sisa masa simpan yang memadai.",
-      },
-      {
-        icon: "🚫",
-        title: "Tidak untuk Dijual",
-        desc: "Donasi yang diambil dari platform tidak boleh dijual kembali. Platform hanya untuk keperluan berbagi.",
+        title: "Persetujuan Eksplisit",
+        desc: "Dalam situasi lain hanya jika Anda telah memberikan persetujuan eksplisit dan tertulis untuk berbagi data tersebut.",
       },
     ];
     return (
@@ -374,11 +264,13 @@ class SectionKonten extends Component {
             marginBottom: 16,
           }}
         >
-          Saat Anda mengunggah konten atau membuat posting donasi di FoodRescue,
-          Anda setuju untuk mematuhi standar konten berikut:
+          FoodRescue{" "}
+          <strong style={{ color: "var(--g1)" }}>tidak menjual</strong> data
+          pribadi Anda kepada pihak ketiga. Kami hanya membagikan informasi
+          dalam kondisi terbatas berikut:
         </p>
         <div className="d-flex flex-column gap-2">
-          {rules.map((item) => (
+          {items.map((item) => (
             <div
               key={item.title}
               className="card-basic rounded-3 p-3 d-flex gap-3 align-items-start"
@@ -415,16 +307,29 @@ class SectionKonten extends Component {
   }
 }
 
-class SectionLarangan extends Component {
+class SectionKeamanan extends Component {
   render() {
-    const items = [
-      "Mengunggah informasi palsu, menyesatkan, atau konten yang menipu pengguna lain",
-      "Menggunakan platform untuk tujuan komersial, promosi berbayar, atau iklan tanpa izin tertulis",
-      "Menyebarkan konten yang mengandung ujaran kebencian, diskriminasi, atau pelecehan terhadap pihak lain",
-      "Mencoba meretas, merusak, atau mengganggu sistem dan infrastruktur platform",
-      "Membuat akun palsu atau menyamar sebagai pengguna atau pihak lain",
-      "Mengambil, mengklaim, atau menimbun donasi yang tidak akan digunakan secara pribadi",
-      "Melakukan tindakan yang melanggar hukum yang berlaku di Indonesia",
+    const cards = [
+      {
+        icon: "bi bi-lock-fill",
+        label: "Enkripsi SSL/TLS",
+        desc: "Seluruh transmisi data dienkripsi menggunakan protokol SSL/TLS terkini.",
+      },
+      {
+        icon: "bi bi-key-fill",
+        label: "Enkripsi Data",
+        desc: "Kata sandi dan data sensitif disimpan dalam format terenkripsi dengan hashing yang kuat.",
+      },
+      {
+        icon: "bi bi-eye-slash-fill",
+        label: "Akses Terbatas",
+        desc: "Hanya karyawan berwenang yang dapat mengakses data pengguna sesuai kebutuhan tugasnya.",
+      },
+      {
+        icon: "bi bi-arrow-repeat",
+        label: "Audit Berkala",
+        desc: "Sistem keamanan kami diaudit dan diperbarui secara berkala oleh tim keamanan internal.",
+      },
     ];
     return (
       <>
@@ -437,235 +342,12 @@ class SectionLarangan extends Component {
             marginBottom: 16,
           }}
         >
-          Untuk menjaga platform tetap aman dan bermanfaat, pengguna dilarang
-          keras melakukan hal-hal berikut:
-        </p>
-        <div className="card-basic rounded-3 overflow-hidden">
-          {items.map((item, i) => (
-            <div
-              key={i}
-              className="d-flex align-items-start gap-3 px-3 py-3"
-              style={{
-                borderBottom:
-                  i < items.length - 1 ? "1px solid var(--border)" : "none",
-              }}
-            >
-              <div
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 7,
-                  background: "rgba(220,53,69,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  marginTop: 1,
-                }}
-              >
-                <i
-                  className="bi bi-x-lg"
-                  style={{ fontSize: 10, color: "#dc3545" }}
-                />
-              </div>
-              <p
-                className="outfit"
-                style={{
-                  fontSize: 13,
-                  color: "var(--txt3)",
-                  lineHeight: 1.65,
-                  margin: 0,
-                }}
-              >
-                {item}
-              </p>
-            </div>
-          ))}
-        </div>
-        <div
-          className="card-basic rounded-3 p-3 d-flex gap-2 align-items-start mt-3"
-          style={{ borderLeft: "3px solid #dc3545" }}
-        >
-          <i
-            className="bi bi-exclamation-triangle-fill"
-            style={{ color: "#dc3545", marginTop: 2 }}
-          />
-          <p
-            className="outfit"
-            style={{
-              fontSize: 13,
-              color: "var(--txt3)",
-              margin: 0,
-              lineHeight: 1.7,
-            }}
-          >
-            Pelanggaran terhadap ketentuan di atas dapat mengakibatkan
-            penonaktifan akun secara permanen tanpa pemberitahuan sebelumnya.
-          </p>
-        </div>
-      </>
-    );
-  }
-}
-
-class SectionTanggung extends Component {
-  render() {
-    return (
-      <>
-        <p
-          className="outfit"
-          style={{
-            fontSize: 14,
-            color: "var(--txt3)",
-            lineHeight: 1.8,
-            marginBottom: 16,
-          }}
-        >
-          FoodRescue berperan sebagai fasilitator antara pemberi dan penerima
-          donasi. Berikut pembagian tanggung jawab yang perlu dipahami:
-        </p>
-        <div className="d-flex flex-column gap-3">
-          {[
-            {
-              color: "var(--g1)",
-              bg: "var(--g5)",
-              border: "var(--g1)",
-              icon: "bi bi-building",
-              title: "Tanggung Jawab FoodRescue",
-              items: [
-                "Menyediakan dan memelihara platform yang aman dan fungsional",
-                "Memproses data pengguna sesuai Kebijakan Privasi yang berlaku",
-                "Menindaklanjuti laporan pelanggaran dari pengguna",
-              ],
-            },
-            {
-              color: "var(--cr1)",
-              bg: "var(--cr4)",
-              border: "var(--cr1)",
-              icon: "bi bi-person-fill",
-              title: "Tanggung Jawab Pengguna",
-              items: [
-                "Memastikan kebenaran dan keamanan pangan dari donasi yang diunggah",
-                "Bertanggung jawab atas setiap interaksi dengan pengguna lain di platform",
-                "Menjaga kerahasiaan akun dan segera melaporkan aktivitas mencurigakan",
-              ],
-            },
-            {
-              color: "#1e7ab8",
-              bg: "rgba(30,122,184,0.08)",
-              border: "#1e7ab8",
-              icon: "bi bi-shield-x",
-              title: "Batasan Tanggung Jawab",
-              items: [
-                "FoodRescue tidak bertanggung jawab atas kerugian akibat transaksi antar pengguna",
-                "Kami tidak menjamin ketersediaan layanan 24/7 tanpa gangguan",
-                "Keputusan untuk menerima atau memberikan donasi sepenuhnya ada pada pengguna",
-              ],
-            },
-          ].map((section) => (
-            <div
-              key={section.title}
-              className="card-basic rounded-3 p-3"
-              style={{ borderLeft: `3px solid ${section.border}` }}
-            >
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 9,
-                    background: section.bg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <i
-                    className={section.icon}
-                    style={{ color: section.color }}
-                  />
-                </div>
-                <p
-                  className="syne-h1"
-                  style={{ fontSize: 14, color: section.color, margin: 0 }}
-                >
-                  {section.title}
-                </p>
-              </div>
-              <div className="d-flex flex-column gap-2">
-                {section.items.map((txt, i) => (
-                  <div key={i} className="d-flex gap-2 align-items-start">
-                    <i
-                      className="bi bi-dot"
-                      style={{
-                        color: section.color,
-                        fontSize: 18,
-                        marginTop: -2,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <p
-                      className="outfit"
-                      style={{
-                        fontSize: 13,
-                        color: "var(--txt3)",
-                        lineHeight: 1.65,
-                        margin: 0,
-                      }}
-                    >
-                      {txt}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  }
-}
-
-class SectionHaki extends Component {
-  render() {
-    return (
-      <>
-        <p
-          className="outfit"
-          style={{
-            fontSize: 14,
-            color: "var(--txt3)",
-            lineHeight: 1.8,
-            marginBottom: 16,
-          }}
-        >
-          Semua elemen platform FoodRescue — termasuk logo, desain, kode, dan
-          nama merek — dilindungi oleh hukum hak kekayaan intelektual Indonesia.
+          Kami menerapkan langkah-langkah keamanan teknis dan organisasi yang
+          kuat untuk melindungi informasi Anda dari akses yang tidak sah.
         </p>
         <div className="row g-3 mb-3">
-          {[
-            {
-              icon: "bi bi-c-circle-fill",
-              title: "Hak Cipta",
-              desc: "Seluruh konten asli FoodRescue dilindungi hak cipta. Dilarang menyalin tanpa izin.",
-            },
-            {
-              icon: "bi bi-badge-tm-fill",
-              title: "Merek Dagang",
-              desc: "Nama dan logo FoodRescue adalah merek terdaftar yang tidak boleh digunakan tanpa izin.",
-            },
-            {
-              icon: "bi bi-code-square",
-              title: "Kode Platform",
-              desc: "Kode sumber platform bersifat proprietary dan tidak boleh didekompilasi atau dimodifikasi.",
-            },
-            {
-              icon: "bi bi-image-fill",
-              title: "Konten Pengguna",
-              desc: "Anda mempertahankan hak atas konten yang Anda unggah, namun memberikan lisensi penggunaan kepada FoodRescue.",
-            },
-          ].map((c) => (
-            <div className="col-6" key={c.title}>
+          {cards.map((c) => (
+            <div className="col-6" key={c.label}>
               <div className="card-basic rounded-3 p-3 text-center h-100">
                 <div
                   style={{
@@ -692,7 +374,7 @@ class SectionHaki extends Component {
                     marginBottom: 4,
                   }}
                 >
-                  {c.title}
+                  {c.label}
                 </p>
                 <p
                   className="outfit"
@@ -709,13 +391,74 @@ class SectionHaki extends Component {
             </div>
           ))}
         </div>
+        <div className="card-cream rounded-3 p-3 d-flex gap-2 align-items-start">
+          <i
+            className="bi bi-info-circle-fill"
+            style={{ color: "var(--cr1)", marginTop: 2 }}
+          />
+          <p
+            className="outfit"
+            style={{
+              fontSize: 13,
+              color: "var(--txt3)",
+              margin: 0,
+              lineHeight: 1.7,
+            }}
+          >
+            Meskipun kami berupaya semaksimal mungkin, tidak ada sistem keamanan
+            yang sepenuhnya sempurna. Gunakan kata sandi yang kuat dan jangan
+            bagikan kepada siapapun.
+          </p>
+        </div>
       </>
     );
   }
 }
 
-class SectionPenghentian extends Component {
+class SectionHak extends Component {
   render() {
+    const rights = [
+      {
+        icon: "bi bi-eye",
+        color: "var(--g1)",
+        bg: "var(--g5)",
+        border: "var(--g1)",
+        title: "Hak Akses",
+        desc: "Anda berhak meminta salinan data pribadi yang kami simpan tentang Anda kapan saja.",
+      },
+      {
+        icon: "bi bi-pencil",
+        color: "var(--cr1)",
+        bg: "var(--cr4)",
+        border: "var(--cr1)",
+        title: "Hak Koreksi",
+        desc: "Anda dapat memperbarui atau memperbaiki data yang tidak akurat melalui pengaturan akun.",
+      },
+      {
+        icon: "bi bi-trash",
+        color: "var(--sa1)",
+        bg: "var(--sa5)",
+        border: "var(--sa1)",
+        title: "Hak Penghapusan",
+        desc: "Anda dapat meminta penghapusan akun dan data pribadi Anda, tunduk pada ketentuan hukum yang berlaku.",
+      },
+      {
+        icon: "bi bi-hand-thumbs-down",
+        color: "#1e7ab8",
+        bg: "rgba(30,122,184,0.08)",
+        border: "#1e7ab8",
+        title: "Hak Menolak",
+        desc: "Anda berhak menolak pemrosesan data untuk tujuan pemasaran langsung atau profiling tertentu.",
+      },
+      {
+        icon: "bi bi-download",
+        color: "var(--g1)",
+        bg: "var(--g5)",
+        border: "var(--g1)",
+        title: "Hak Portabilitas",
+        desc: "Anda dapat meminta ekspor data Anda dalam format yang dapat dibaca mesin sesuai permintaan.",
+      },
+    ];
     return (
       <>
         <p
@@ -727,61 +470,37 @@ class SectionPenghentian extends Component {
             marginBottom: 16,
           }}
         >
-          Akun dapat dihentikan baik atas permintaan pengguna maupun oleh
-          FoodRescue dalam kondisi tertentu.
+          Sebagai pengguna FoodRescue, Anda memiliki hak penuh atas data pribadi
+          Anda, antara lain:
         </p>
-        <div className="d-flex flex-column gap-2 mb-3">
-          {[
-            {
-              icon: "bi bi-person-x-fill",
-              color: "var(--g1)",
-              bg: "var(--g5)",
-              title: "Penghentian oleh Pengguna",
-              desc: "Anda dapat menonaktifkan atau menghapus akun kapan saja melalui menu pengaturan profil. Data akan dihapus sesuai Kebijakan Privasi kami.",
-            },
-            {
-              icon: "bi bi-shield-fill-x",
-              color: "var(--cr1)",
-              bg: "var(--cr4)",
-              title: "Penghentian oleh FoodRescue",
-              desc: "Kami berhak menangguhkan atau menghapus akun yang terbukti melanggar Syarat dan Ketentuan, melakukan penipuan, atau merugikan pengguna lain.",
-            },
-            {
-              icon: "bi bi-archive-fill",
-              color: "#1e7ab8",
-              bg: "rgba(30,122,184,0.08)",
-              title: "Efek Penghentian",
-              desc: "Setelah akun dihapus, akses ke platform dan seluruh data terkait akan dihentikan. Sisa data yang bersifat agregat mungkin tetap disimpan untuk keperluan statistik.",
-            },
-          ].map((item) => (
+        <div className="d-flex flex-column gap-2">
+          {rights.map((r) => (
             <div
-              key={item.title}
+              key={r.title}
               className="card-basic rounded-3 p-3 d-flex gap-3 align-items-start"
+              style={{ borderLeft: `3px solid ${r.border}` }}
             >
               <div
                 style={{
                   width: 36,
                   height: 36,
                   borderRadius: 10,
-                  background: item.bg,
+                  background: r.bg,
+                  color: r.color,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
                 }}
               >
-                <i className={item.icon} style={{ color: item.color }} />
+                <i className={r.icon} />
               </div>
               <div>
                 <p
                   className="syne-h1"
-                  style={{
-                    fontSize: 13,
-                    color: "var(--txt2)",
-                    marginBottom: 3,
-                  }}
+                  style={{ fontSize: 13, color: r.color, marginBottom: 3 }}
                 >
-                  {item.title}
+                  {r.title}
                 </p>
                 <p
                   className="outfit"
@@ -792,7 +511,7 @@ class SectionPenghentian extends Component {
                     margin: 0,
                   }}
                 >
-                  {item.desc}
+                  {r.desc}
                 </p>
               </div>
             </div>
@@ -803,8 +522,31 @@ class SectionPenghentian extends Component {
   }
 }
 
-class SectionHukum extends Component {
+class SectionCookie extends Component {
   render() {
+    const rows = [
+      {
+        type: "Esensial",
+        desc: "Diperlukan agar platform berfungsi dengan benar. Tidak dapat dinonaktifkan.",
+        badge: "Selalu Aktif",
+        badgeColor: "var(--g1)",
+        badgeBg: "var(--g5)",
+      },
+      {
+        type: "Fungsional",
+        desc: "Menyimpan preferensi Anda seperti bahasa dan tema tampilan.",
+        badge: "Opsional",
+        badgeColor: "var(--cr1)",
+        badgeBg: "var(--cr4)",
+      },
+      {
+        type: "Analitik",
+        desc: "Membantu kami memahami cara pengguna berinteraksi dengan platform.",
+        badge: "Opsional",
+        badgeColor: "var(--cr1)",
+        badgeBg: "var(--cr4)",
+      },
+    ];
     return (
       <>
         <p
@@ -816,57 +558,156 @@ class SectionHukum extends Component {
             marginBottom: 16,
           }}
         >
-          Syarat dan Ketentuan ini diatur dan ditafsirkan berdasarkan hukum yang
-          berlaku di Republik Indonesia.
+          FoodRescue menggunakan cookie dan teknologi serupa untuk meningkatkan
+          pengalaman pengguna dan menganalisis cara platform kami digunakan.
         </p>
-        <div className="d-flex flex-column gap-2">
-          {[
-            {
-              icon: "🏛️",
-              title: "Yurisdiksi",
-              desc: "Segala sengketa yang timbul sehubungan dengan penggunaan platform ini tunduk pada yurisdiksi eksklusif pengadilan yang berwenang di Indonesia.",
-            },
-            {
-              icon: "🤝",
-              title: "Penyelesaian Sengketa",
-              desc: "Para pihak sepakat untuk terlebih dahulu menyelesaikan sengketa melalui musyawarah mufakat sebelum menempuh jalur hukum formal.",
-            },
-            {
-              icon: "📜",
-              title: "Peraturan Berlaku",
-              desc: "Platform ini beroperasi sesuai dengan Undang-Undang ITE, Peraturan Perlindungan Data Pribadi, dan regulasi relevan lainnya di Indonesia.",
-            },
-          ].map((item) => (
+        <div className="card-basic rounded-3 overflow-hidden mb-3">
+          {rows.map((row, i) => (
             <div
-              key={item.title}
-              className="card-basic rounded-3 p-3 d-flex gap-3 align-items-start"
+              key={row.type}
+              className="d-flex align-items-center gap-3 px-3 py-3"
+              style={{
+                borderBottom:
+                  i < rows.length - 1 ? "1px solid var(--border)" : "none",
+              }}
             >
-              <span style={{ fontSize: 22 }}>{item.icon}</span>
-              <div>
+              <div style={{ flex: 1 }}>
                 <p
                   className="syne-h1"
                   style={{
                     fontSize: 13,
                     color: "var(--txt2)",
-                    marginBottom: 3,
+                    marginBottom: 2,
                   }}
                 >
-                  {item.title}
+                  {row.type}
                 </p>
                 <p
                   className="outfit"
                   style={{
-                    fontSize: 13,
-                    color: "var(--txt3)",
-                    lineHeight: 1.65,
+                    fontSize: 12,
+                    color: "var(--txt4)",
                     margin: 0,
+                    lineHeight: 1.5,
                   }}
                 >
-                  {item.desc}
+                  {row.desc}
                 </p>
+              </div>
+              <span
+                className="badge-green outfit"
+                style={{
+                  background: row.badgeBg,
+                  color: row.badgeColor,
+                  border: `1px solid ${row.badgeColor}`,
+                  padding: "3px 10px",
+                  borderRadius: 20,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {row.badge}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p
+          className="outfit"
+          style={{
+            fontSize: 13,
+            color: "var(--txt3)",
+            lineHeight: 1.75,
+            margin: 0,
+          }}
+        >
+          Anda dapat mengatur preferensi cookie melalui pengaturan browser.
+          Namun, menonaktifkan cookie esensial dapat memengaruhi fungsionalitas
+          platform.
+        </p>
+      </>
+    );
+  }
+}
+
+class SectionPerubahan extends Component {
+  render() {
+    const timeline = [
+      {
+        date: "Maret 2026",
+        label: "Versi 1.0 — Peluncuran awal kebijakan privasi FoodRescue.",
+      },
+      {
+        date: "April 2026",
+        label: "Versi 1.1 — Penambahan ketentuan cookie dan pelacakan.",
+      },
+      {
+        date: "April 2026",
+        label: "Versi 1.2 — Pembaruan hak pengguna sesuai regulasi terbaru.",
+      },
+      {
+        date: "Mei 2026",
+        label: "Versi 2.0 — Revisi menyeluruh dan peningkatan transparansi.",
+      },
+    ];
+    return (
+      <>
+        <p
+          className="outfit"
+          style={{
+            fontSize: 14,
+            color: "var(--txt3)",
+            lineHeight: 1.8,
+            marginBottom: 20,
+          }}
+        >
+          Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu untuk
+          mencerminkan perubahan layanan, teknologi, atau persyaratan hukum yang
+          berlaku.
+        </p>
+        <div
+          className="about-timeline"
+          style={{ maxWidth: "100%", margin: "0 0 20px" }}
+        >
+          {timeline.map((item, i) => (
+            <div key={item.date} className="about-timeline__item">
+              <div className="about-timeline__left">
+                <div
+                  className="about-timeline__circle"
+                  style={{ fontSize: 13 }}
+                >
+                  📋
+                </div>
+                {i < timeline.length - 1 && (
+                  <div className="about-timeline__line" />
+                )}
+              </div>
+              <div />
+              <div className="pt-1">
+                <div className="about-timeline__date">{item.date}</div>
+                <p className="outfit about-timeline__desc">{item.label}</p>
               </div>
             </div>
           ))}
+        </div>
+        <div className="card-green rounded-3 p-3 d-flex gap-2 align-items-start">
+          <i
+            className="bi bi-bell-fill"
+            style={{ color: "var(--g1)", marginTop: 2 }}
+          />
+          <p
+            className="outfit"
+            style={{
+              fontSize: 13,
+              color: "var(--txt3)",
+              margin: 0,
+              lineHeight: 1.7,
+            }}
+          >
+            Setiap perubahan signifikan akan kami beritahukan melalui email
+            terdaftar atau notifikasi di dalam aplikasi sebelum perubahan
+            berlaku efektif.
+          </p>
         </div>
       </>
     );
@@ -881,8 +722,8 @@ class SectionKontak extends Component {
         color: "var(--g1)",
         bg: "var(--g5)",
         border: "1px solid var(--g3)",
-        label: "Email Legal",
-        value: "foodrescue.indonesia@gmail.com",
+        label: "Email Privasi",
+        value: "privacy@foodrescue.id",
         note: "Respons dalam 2×24 jam kerja",
       },
       {
@@ -891,7 +732,7 @@ class SectionKontak extends Component {
         bg: "var(--cr4)",
         border: "1px solid var(--cr3)",
         label: "WhatsApp Support",
-        value: "+62 822-7419-7020",
+        value: "+62 812-3456-7890",
         note: "Senin–Jumat, 08.00–17.00 WIB",
       },
     ];
@@ -906,8 +747,9 @@ class SectionKontak extends Component {
             marginBottom: 16,
           }}
         >
-          Jika Anda memiliki pertanyaan seputar Syarat dan Ketentuan ini,
-          silakan hubungi tim kami melalui:
+          Jika Anda memiliki pertanyaan, kekhawatiran, atau permintaan terkait
+          Kebijakan Privasi atau data pribadi Anda, silakan hubungi Tim Privasi
+          FoodRescue melalui:
         </p>
         <div className="d-flex flex-column gap-3 mb-3">
           {contacts.map((c) => (
@@ -933,7 +775,7 @@ class SectionKontak extends Component {
               >
                 <i className={c.icon} />
               </div>
-              <div>
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <p
                   className="outfit"
                   style={{
@@ -948,10 +790,15 @@ class SectionKontak extends Component {
                   {c.label}
                 </p>
                 <p
-                  className="syne-h1"
-                  style={{ fontSize: 15, color: "var(--txt)", marginBottom: 2 }}
+                  className="syne-h1 contact-value-text"
+                  style={{
+                    color: "var(--txt)",
+                    marginBottom: 2,
+                    overflowWrap: "break-word",
+                    wordBreak: "break-word",
+                  }}
                 >
-                  {c.value}
+                  {breakable(c.value)}
                 </p>
                 <p
                   className="outfit"
@@ -963,12 +810,26 @@ class SectionKontak extends Component {
             </div>
           ))}
         </div>
+        <p
+          className="outfit"
+          style={{
+            fontSize: 13,
+            color: "var(--txt3)",
+            lineHeight: 1.75,
+            margin: 0,
+          }}
+        >
+          Kami berkomitmen untuk merespons setiap permintaan terkait privasi
+          dengan serius dan dalam jangka waktu yang wajar sesuai peraturan yang
+          berlaku.
+        </p>
       </>
     );
   }
 }
 
-// ─── Accordion Item ───────────────────────────────────────────────────────────
+// ─── Accordion Item ──────────────────────────────────────────────────────────
+
 class AccordionItem extends Component {
   render() {
     const { section, isOpen, isRead, onToggle } = this.props;
@@ -984,6 +845,7 @@ class AccordionItem extends Component {
           transition: "border-color 0.25s, box-shadow 0.25s",
         }}
       >
+        {/* Header */}
         <div
           onClick={onToggle}
           className="d-flex align-items-center gap-3 px-4"
@@ -1010,8 +872,9 @@ class AccordionItem extends Component {
           >
             <i className={section.icon} />
           </div>
+
           <div style={{ flex: 1 }}>
-            <div className="d-flex align-items-center gap-2 mb-1">
+            <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
               <span className={`faq-tag ${section.tagCls}`}>
                 {section.tagLabel}
               </span>
@@ -1026,6 +889,8 @@ class AccordionItem extends Component {
                     border: "1px solid var(--g3)",
                     borderRadius: 20,
                     padding: "2px 8px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   ✓ Sudah dibaca
@@ -1043,6 +908,7 @@ class AccordionItem extends Component {
               {section.title}
             </p>
           </div>
+
           <div
             style={{
               width: 32,
@@ -1063,6 +929,8 @@ class AccordionItem extends Component {
             />
           </div>
         </div>
+
+        {/* Body */}
         <div
           style={{
             maxHeight: isOpen ? 2000 : 0,
@@ -1084,38 +952,57 @@ class AccordionItem extends Component {
   }
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-class TermsAndConditions extends Component {
+// ─── Main Component ──────────────────────────────────────────────────────────
+
+class PrivacyPolicy extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      // null = show all, otherwise the key of the active single section
       activeSection: null,
+      // which section accordion is open (for single-view mode)
       openSection: null,
       readSections: new Set(),
     };
   }
 
+  // Toggle between show-all and single-section view
   selectSection = (key) => {
     this.setState((prev) => {
       const readSections = new Set(prev.readSections);
       readSections.add(key);
-      return { activeSection: key, openSection: key, readSections };
+
+      return {
+        activeSection: key,
+        openSection: key,
+        readSections,
+      };
     });
+
+    // 🔥 scroll ke section
     setTimeout(() => {
       const el = document.getElementById(key);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }, 100);
   };
 
   showAll = () => {
     this.setState({ activeSection: null, openSection: null });
+
     setTimeout(() => {
       const firstSection = document.getElementById(navItems[0].key);
-      if (firstSection)
-        firstSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (firstSection) {
+        firstSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
     }, 100);
   };
 
+  // In "show all" mode the accordion items still open/close individually
   toggleAccordion = (key) => {
     this.setState((prev) => {
       const readSections = new Set(prev.readSections);
@@ -1135,94 +1022,74 @@ class TermsAndConditions extends Component {
 
     const sections = [
       {
-        key: "penerimaan",
-        icon: "bi bi-check-circle-fill",
+        key: "pengumpulan",
+        icon: "bi bi-database-fill",
         iconBg: "var(--g5)",
         iconColor: "var(--g1)",
-        title: "Penerimaan Syarat dan Ketentuan",
-        tagLabel: "Persetujuan",
+        title: "Informasi yang Kami Kumpulkan",
+        tagLabel: "Data & Privasi",
         tagCls: "tag-g",
-        content: <SectionPenerimaan />,
-      },
-      {
-        key: "akun",
-        icon: "bi bi-person-badge-fill",
-        iconBg: "var(--cr4)",
-        iconColor: "var(--cr1)",
-        title: "Akun dan Pendaftaran",
-        tagLabel: "Akun",
-        tagCls: "tag-cr",
-        content: <SectionAkun />,
+        content: <SectionPengumpulan />,
       },
       {
         key: "penggunaan",
-        icon: "bi bi-hand-index-thumb-fill",
-        iconBg: "rgba(30,122,184,0.08)",
-        iconColor: "#1e7ab8",
-        title: "Penggunaan Layanan",
-        tagLabel: "Layanan",
-        tagCls: "tag-g",
+        icon: "bi bi-gear-fill",
+        iconBg: "var(--cr4)",
+        iconColor: "var(--cr1)",
+        title: "Bagaimana Kami Menggunakan Informasi Anda",
+        tagLabel: "Penggunaan",
+        tagCls: "tag-cr",
         content: <SectionPenggunaan />,
       },
       {
-        key: "konten",
-        icon: "bi bi-file-earmark-text-fill",
-        iconBg: "var(--g5)",
-        iconColor: "var(--g1)",
-        title: "Konten dan Donasi",
-        tagLabel: "Konten",
-        tagCls: "tag-g",
-        content: <SectionKonten />,
-      },
-      {
-        key: "larangan",
-        icon: "bi bi-slash-circle-fill",
-        iconBg: "rgba(220,53,69,0.08)",
-        iconColor: "#dc3545",
-        title: "Larangan Penggunaan",
-        tagLabel: "Larangan",
-        tagCls: "tag-cr",
-        content: <SectionLarangan />,
-      },
-      {
-        key: "tanggung",
-        icon: "bi bi-shield-exclamation",
-        iconBg: "var(--cr4)",
-        iconColor: "var(--cr1)",
-        title: "Batasan Tanggung Jawab",
-        tagLabel: "Tanggung Jawab",
-        tagCls: "tag-cr",
-        content: <SectionTanggung />,
-      },
-      {
-        key: "haki",
-        icon: "bi bi-award-fill",
+        key: "berbagi",
+        icon: "bi bi-share-fill",
         iconBg: "rgba(30,122,184,0.08)",
         iconColor: "#1e7ab8",
-        title: "Hak Kekayaan Intelektual",
-        tagLabel: "HAKI",
+        title: "Berbagi & Pengungkapan Data",
+        tagLabel: "Transparansi",
         tagCls: "tag-g",
-        content: <SectionHaki />,
+        content: <SectionBerbagi />,
       },
       {
-        key: "penghentian",
-        icon: "bi bi-x-octagon-fill",
-        iconBg: "rgba(220,53,69,0.08)",
-        iconColor: "#dc3545",
-        title: "Penghentian Akun",
-        tagLabel: "Akun",
-        tagCls: "tag-cr",
-        content: <SectionPenghentian />,
-      },
-      {
-        key: "hukum",
-        icon: "bi bi-bank2",
+        key: "keamanan",
+        icon: "bi bi-shield-fill-check",
         iconBg: "var(--g5)",
         iconColor: "var(--g1)",
-        title: "Hukum yang Berlaku",
-        tagLabel: "Hukum",
+        title: "Keamanan Data",
+        tagLabel: "Perlindungan",
         tagCls: "tag-g",
-        content: <SectionHukum />,
+        content: <SectionKeamanan />,
+      },
+      {
+        key: "hak",
+        icon: "bi bi-person-check-fill",
+        iconBg: "var(--cr4)",
+        iconColor: "var(--cr1)",
+        title: "Hak-Hak Pengguna",
+        tagLabel: "Hak Anda",
+        tagCls: "tag-cr",
+        content: <SectionHak />,
+      },
+      {
+        key: "cookie",
+        icon: "bi bi-browser-chrome",
+        iconBg: "rgba(30,122,184,0.08)",
+        iconColor: "#1e7ab8",
+        title: "Cookie & Teknologi Pelacakan",
+        tagLabel: "Cookie",
+        tagCls: "tag-g",
+        content: <SectionCookie />,
+      },
+      {
+        key: "perubahan",
+        icon: "bi bi-arrow-clockwise",
+        iconBg: "var(--g5)",
+        iconColor: "var(--g1)",
+        title: "Perubahan Kebijakan Privasi",
+        tagLabel: "Pembaruan",
+        tagCls: "tag-g",
+        content: <SectionPerubahan />,
       },
       {
         key: "kontak",
@@ -1242,14 +1109,11 @@ class TermsAndConditions extends Component {
 
     return (
       <div className="main-bg-color" style={{ minHeight: "100vh" }}>
-        {/* ── Hero ── */}
         <section className="about-hero position-relative">
           <div
             className="grid-detail-light position-absolute"
             style={{ inset: 0 }}
           />
-
-          {/* Tombol Kembali — selalu tampil, terutama berguna saat belum login */}
           <button
             onClick={() => this.props.navigate(-1)}
             className="outfit"
@@ -1285,15 +1149,15 @@ class TermsAndConditions extends Component {
             <i className="bi bi-arrow-left" style={{ fontSize: 12 }} />
             Kembali
           </button>
-
           <div className="container about-hero__inner py-0 px-4 px-md-5">
             <div className="row align-items-center g-3">
               {/* Left */}
               <div className="col-lg-8">
                 <div className="about-hero-badge mb-2">
-                  <i className="bi bi-file-earmark-text-fill" />
-                  <span>Syarat & Ketentuan</span>
+                  <i className="bi bi-shield-lock-fill" />
+                  <span>Kebijakan Privasi</span>
                 </div>
+
                 <h1
                   className="syne-h1"
                   style={{
@@ -1304,7 +1168,7 @@ class TermsAndConditions extends Component {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Aturan Bersama untuk
+                  Privasi Anda adalah
                   <br />
                   <span
                     style={{
@@ -1313,9 +1177,10 @@ class TermsAndConditions extends Component {
                       WebkitTextFillColor: "transparent",
                     }}
                   >
-                    Platform yang Lebih Baik
+                    Prioritas Kami
                   </span>
                 </h1>
+
                 <p
                   className="outfit"
                   style={{
@@ -1326,10 +1191,11 @@ class TermsAndConditions extends Component {
                     marginBottom: 16,
                   }}
                 >
-                  Dokumen ini mengatur hubungan antara Anda dan FoodRescue dalam
-                  menggunakan platform. Harap baca dengan seksama sebelum mulai
-                  menggunakan layanan kami.
+                  Dokumen ini menjelaskan bagaimana FoodRescue mengumpulkan,
+                  menggunakan, dan melindungi informasi pribadi Anda. Kami
+                  berkomitmen penuh pada transparansi dan keamanan data.
                 </p>
+
                 <div className="d-flex flex-wrap gap-2">
                   {heroTags.map((tag) => (
                     <span key={tag.text} className="about-hero__tag outfit">
@@ -1340,7 +1206,7 @@ class TermsAndConditions extends Component {
                 </div>
               </div>
 
-              {/* Right */}
+              {/* Right — Commitment card */}
               <div className="col-lg-4">
                 <div className="card-transparent rounded-4 p-3">
                   <p
@@ -1354,16 +1220,16 @@ class TermsAndConditions extends Component {
                       marginBottom: 10,
                     }}
                   >
-                    Informasi Dokumen
+                    Ringkasan Komitmen
                   </p>
-                  {highlightItems.map((item, i) => (
+                  {commitmentItems.map((item, i) => (
                     <div
                       key={item.text}
                       className="d-flex align-items-center gap-3"
                       style={{
                         padding: "8px 0",
                         borderBottom:
-                          i < highlightItems.length - 1
+                          i < commitmentItems.length - 1
                             ? "1px solid rgba(255,255,255,0.1)"
                             : "none",
                       }}
@@ -1408,7 +1274,7 @@ class TermsAndConditions extends Component {
           style={{ padding: "48px 0 80px" }}
         >
           <div className="row g-4 align-items-start">
-            {/* ── Sidebar ── */}
+            {/* ── Sidebar ── sticky via position:sticky ── */}
             <div
               className="col-lg-3 d-none d-lg-block"
               style={{
@@ -1419,6 +1285,7 @@ class TermsAndConditions extends Component {
               }}
             >
               <aside className="faq-sidebar">
+                {/* Daftar Isi label */}
                 <p
                   className="outfit"
                   style={{
@@ -1434,7 +1301,7 @@ class TermsAndConditions extends Component {
                   Daftar Isi
                 </p>
 
-                {/* Progress */}
+                {/* Read Progress */}
                 <div className="card-basic rounded-3 p-3 mb-3">
                   <div className="d-flex justify-content-between mb-2">
                     <span
@@ -1467,7 +1334,7 @@ class TermsAndConditions extends Component {
                   </p>
                 </div>
 
-                {/* Tampilkan Semua */}
+                {/* "Tampilkan Semua" button */}
                 <button
                   onClick={this.showAll}
                   className="outfit"
@@ -1513,6 +1380,7 @@ class TermsAndConditions extends Component {
                   <span style={{ flex: 1 }}>Tampilkan Semua</span>
                 </button>
 
+                {/* Divider */}
                 <div
                   style={{
                     height: 1,
@@ -1521,6 +1389,7 @@ class TermsAndConditions extends Component {
                   }}
                 />
 
+                {/* Nav links */}
                 {navItems.map((item) => {
                   const isRead = readSections.has(item.key);
                   const isActive = activeSection === item.key;
@@ -1582,63 +1451,12 @@ class TermsAndConditions extends Component {
                     </button>
                   );
                 })}
-
-                {/* Link ke Privacy Policy */}
-                <div
-                  style={{
-                    height: 1,
-                    background: "var(--border)",
-                    margin: "10px 4px 10px",
-                  }}
-                />
-                <button
-                  onClick={() => this.props.navigate("/privacy-policy")}
-                  className="outfit"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    width: "100%",
-                    padding: "9px 12px",
-                    borderRadius: 10,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--txt3)",
-                    border: "1px solid transparent",
-                    background: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 7,
-                      background: "var(--surf2)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 12,
-                      flexShrink: 0,
-                      color: "var(--txt4)",
-                    }}
-                  >
-                    <i className="bi bi-shield-lock-fill" />
-                  </div>
-                  <span style={{ flex: 1 }}>Kebijakan Privasi</span>
-                  <i
-                    className="bi bi-arrow-right"
-                    style={{ fontSize: 11, color: "var(--txt4)" }}
-                  />
-                </button>
               </aside>
             </div>
 
             {/* ── Main content ── */}
             <div className="col-lg-9">
               <div id="top" />
-              {/* Info banner */}
               <div
                 className="card-green rounded-3 d-flex gap-3 align-items-start mb-4"
                 style={{ padding: "20px 24px" }}
@@ -1672,30 +1490,19 @@ class TermsAndConditions extends Component {
                       margin: 0,
                     }}
                   >
-                    Syarat dan Ketentuan ini berlaku untuk seluruh layanan
-                    FoodRescue. Pilih bagian di sebelah kiri untuk membaca satu
-                    topik, atau klik{" "}
+                    Kebijakan Privasi ini berlaku untuk seluruh layanan
+                    FoodRescue, termasuk aplikasi web, aplikasi mobile, dan
+                    layanan terkait. Pilih bagian di sebelah kiri untuk membaca
+                    satu topik, atau klik{" "}
                     <strong style={{ color: "var(--g1)" }}>
                       Tampilkan Semua
                     </strong>{" "}
-                    untuk melihat keseluruhan. Dokumen ini dibaca bersama dengan{" "}
-                    <span
-                      style={{
-                        color: "var(--g1)",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        textDecoration: "underline",
-                      }}
-                      onClick={() => this.props.navigate("/privacy-policy")}
-                    >
-                      Kebijakan Privasi
-                    </span>{" "}
-                    kami.
+                    untuk melihat keseluruhan.
                   </p>
                 </div>
               </div>
 
-              {/* Breadcrumb saat single section */}
+              {/* Section heading when viewing a single section */}
               {activeSection && (
                 <div className="d-flex align-items-center gap-2 mb-3">
                   <button
@@ -1727,8 +1534,9 @@ class TermsAndConditions extends Component {
 
               {/* Accordion sections */}
               {visibleSections.map((section) => (
-                <div id={section.key} className="faq-main" key={section.key}>
+                <div id={section.key} className="faq-main">
                   <AccordionItem
+                    key={section.key}
                     section={section}
                     isOpen={
                       activeSection
@@ -1771,18 +1579,18 @@ class TermsAndConditions extends Component {
                       margin: "0 auto 16px",
                     }}
                   >
-                    <i className="bi bi-file-earmark-check-fill" />
+                    <i className="bi bi-shield-fill-check" />
                   </div>
                   <h3 className="syne-h1 about-impact__title">
-                    Bergabung & Berkontribusi Bersama
+                    Anda Terlindungi Bersama FoodRescue
                   </h3>
                   <p
                     className="outfit about-impact__subtitle mx-auto mb-4"
                     style={{ maxWidth: 480 }}
                   >
-                    Dengan menggunakan FoodRescue, Anda turut berkontribusi
-                    mengurangi pemborosan makanan dan membantu sesama. Terima
-                    kasih telah membaca Syarat dan Ketentuan kami.
+                    Dengan terus menggunakan layanan kami, Anda menyetujui
+                    Kebijakan Privasi ini. Jika ada pertanyaan, tim kami siap
+                    membantu kapan saja.
                   </p>
                   <div className="d-flex gap-3 justify-content-center flex-wrap">
                     <button
@@ -1790,22 +1598,6 @@ class TermsAndConditions extends Component {
                       onClick={() => this.props.navigate("/contact")}
                     >
                       <i className="bi bi-envelope" /> Hubungi Kami
-                    </button>
-                    <button
-                      className="outfit"
-                      onClick={() => this.props.navigate("/privacy-policy")}
-                      style={{
-                        background: "rgba(255,255,255,0.15)",
-                        border: "1px solid rgba(255,255,255,0.3)",
-                        borderRadius: 10,
-                        padding: "10px 20px",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "#fff",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <i className="bi bi-shield-lock" /> Kebijakan Privasi
                     </button>
                   </div>
                 </div>
@@ -1818,10 +1610,8 @@ class TermsAndConditions extends Component {
   }
 }
 
-function TermsAndConditionsWrapper(props) {
+function PrivacyPolicyWrapper(props) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  return <TermsAndConditions {...props} navigate={navigate} user={user} />;
+  return <PrivacyPolicy {...props} navigate={navigate} />;
 }
-
-export default TermsAndConditionsWrapper;
+export default PrivacyPolicyWrapper;

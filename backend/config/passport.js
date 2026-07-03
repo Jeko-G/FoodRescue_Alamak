@@ -22,9 +22,12 @@ passport.use(
             user.oauth_provider = "google";
             user.oauth_id = profile.id;
             user.is_verified = true;
-            if (!user.avatar_url) user.avatar_url = profile.photos[0]?.value;
-            await user.save();
           }
+          // Sinkron foto Google tiap login, KECUALI user udah pernah upload foto sendiri
+          if (!user.avatar_is_custom && profile.photos[0]?.value) {
+            user.avatar_url = profile.photos[0].value;
+          }
+          if (user.isModified()) await user.save();
           user._isNewUser = false;
           return done(null, user);
         }

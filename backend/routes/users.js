@@ -1,8 +1,76 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
+const multer = require("multer");
 const User = require("../models/user");
 const { auth } = require("../middleware/auth");
+
+const cloudinary = require("../config/cloudinary");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+
+const avatarStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "foodrescue/avatars",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [
+      { width: 300, height: 300, crop: "fill", gravity: "face" },
+    ],
+  },
+});
+const uploadAvatar = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 3 * 1024 * 1024 },
+});
+
+/**
+ * @swagger
+ * /api/users/profile/avatar:
+ *   put:
+ *     summary: Upload/ganti foto profil user login
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [avatar]
+ *             properties:
+ *               avatar: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: Foto profil berhasil diupdate
+ *       400:
+ *         description: File tidak valid / gagal upload
+ *       404:
+ *         description: User tidak ditemukan
+ */
+router.put("/profile/avatar", auth, (req, res) => {
+  uploadAvatar.single("avatar")(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ msg: err.message || "Gagal upload foto" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ msg: "File foto wajib diisi" });
+    }
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) return res.status(404).json({ msg: "User tidak ditemukan" });
+
+      user.avatar_url = req.file.path;
+      user.avatar_is_custom = true;
+      await user.save();
+
+      res.json({
+        msg: "Foto profil berhasil diupdate",
+        avatar_url: user.avatar_url,
+      });
+    } catch (err) {
+      res.status(500).json({ msg: "Server error" });
+    }
+  });
+});
 
 /**
  * @swagger

@@ -1,6 +1,22 @@
 import React, { Component } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Sisipin titik potong (word break opportunity) di tempat yang enak diliat,
+// biar kalau kepanjangan & harus wrap, motongnya abis "@" bukan asal tengah kata
+const breakable = (text) => {
+  const parts = String(text).split(/([@.])/);
+  return parts.map((part, i) =>
+    part === "@" || part === "." ? (
+      <React.Fragment key={i}>
+        {part}
+        <wbr />
+      </React.Fragment>
+    ) : (
+      part
+    ),
+  );
+};
+
 const navItems = [
   {
     key: "pengumpulan",
@@ -759,7 +775,7 @@ class SectionKontak extends Component {
               >
                 <i className={c.icon} />
               </div>
-              <div>
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <p
                   className="outfit"
                   style={{
@@ -774,10 +790,15 @@ class SectionKontak extends Component {
                   {c.label}
                 </p>
                 <p
-                  className="syne-h1"
-                  style={{ fontSize: 15, color: "var(--txt)", marginBottom: 2 }}
+                  className="syne-h1 contact-value-text"
+                  style={{
+                    color: "var(--txt)",
+                    marginBottom: 2,
+                    overflowWrap: "break-word",
+                    wordBreak: "break-word",
+                  }}
                 >
-                  {c.value}
+                  {breakable(c.value)}
                 </p>
                 <p
                   className="outfit"
@@ -853,7 +874,7 @@ class AccordionItem extends Component {
           </div>
 
           <div style={{ flex: 1 }}>
-            <div className="d-flex align-items-center gap-2 mb-1">
+            <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
               <span className={`faq-tag ${section.tagCls}`}>
                 {section.tagLabel}
               </span>
@@ -868,6 +889,8 @@ class AccordionItem extends Component {
                     border: "1px solid var(--g3)",
                     borderRadius: 20,
                     padding: "2px 8px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   ✓ Sudah dibaca
@@ -1125,9 +1148,8 @@ class PrivacyPolicy extends Component {
           >
             <i className="bi bi-arrow-left" style={{ fontSize: 12 }} />
             Kembali
-            </button>
+          </button>
           <div className="container about-hero__inner py-0 px-4 px-md-5">
-          
             <div className="row align-items-center g-3">
               {/* Left */}
               <div className="col-lg-8">

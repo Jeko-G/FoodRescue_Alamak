@@ -20,6 +20,41 @@ function Profile() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setMsg("error:File harus berupa gambar");
+      setTimeout(() => setMsg(""), 3000);
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setMsg("error:Ukuran foto maksimal 3MB");
+      setTimeout(() => setMsg(""), 3000);
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const res = await api.put("/users/profile/avatar", formData);
+      setProfile((prev) => ({ ...prev, avatar_url: res.data.avatar_url }));
+      setMsg("success");
+      setTimeout(() => setMsg(""), 3000);
+    } catch (err) {
+      setMsg(
+        "error:" + (err.response?.data?.msg || "Gagal upload foto profil"),
+      );
+      setTimeout(() => setMsg(""), 3000);
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
 
   const fetchProfile = () => {
     setLoading(true);
@@ -204,37 +239,90 @@ function Profile() {
               gap: 20,
             }}
           >
-            <div
-              style={{
-                width: 88,
-                height: 88,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg,var(--g1),var(--g2))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: "4px solid var(--surface)",
-                boxShadow: "var(--shadow2)",
-                flexShrink: 0,
-              }}
-            >
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="avatar"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                  }}
-                />
-              ) : (
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <div
+                style={{
+                  width: 88,
+                  height: 88,
+                  borderRadius: "50%",
+                  background: "var(--surface)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "4px solid var(--surface)",
+                  boxShadow: "var(--shadow2)",
+                  overflow: "hidden",
+                }}
+              >
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="avatar"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <i
+                    className="bi bi-person-fill"
+                    style={{ fontSize: 40, color: "var(--txt4)" }}
+                  />
+                )}
+                {uploadingAvatar && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "50%",
+                      background: "rgba(0,0,0,0.4)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <div
+                      className="spinner-border spinner-border-sm"
+                      style={{ color: "#fff" }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <label
+                htmlFor="avatar-upload-input"
+                title="Ganti foto profil"
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  right: 0,
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "var(--g1)",
+                  border: "3px solid var(--surface)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: uploadingAvatar ? "not-allowed" : "pointer",
+                  opacity: uploadingAvatar ? 0.6 : 1,
+                }}
+              >
                 <i
-                  className="bi bi-person-fill"
-                  style={{ fontSize: 40, color: "#fff" }}
+                  className="bi bi-camera-fill"
+                  style={{ fontSize: 11, color: "#fff" }}
                 />
-              )}
+              </label>
+              <input
+                id="avatar-upload-input"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                disabled={uploadingAvatar}
+                style={{ display: "none" }}
+              />
             </div>
 
             <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
@@ -482,7 +570,7 @@ function Profile() {
             diperbarui!
           </div>
         )}
-        {msg === "error" && (
+        {msg.startsWith("error") && (
           <div
             style={{
               background: "rgba(224,80,80,0.1)",
@@ -498,8 +586,10 @@ function Profile() {
               marginBottom: 12,
             }}
           >
-            <i className="bi bi-exclamation-circle-fill" /> Gagal memperbarui
-            profil
+            <i className="bi bi-exclamation-circle-fill" />{" "}
+            {msg.includes(":")
+              ? msg.split(":").slice(1).join(":")
+              : "Gagal memperbarui profil"}
           </div>
         )}
 

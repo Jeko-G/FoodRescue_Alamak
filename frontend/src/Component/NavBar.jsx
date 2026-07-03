@@ -333,13 +333,17 @@ class NavBar extends React.Component {
                     width: 28,
                     height: 28,
                     borderRadius: "50%",
-                    background: "var(--g1)",
+                    background: "var(--surface)",
+                    border: user.avatar_url
+                      ? "none"
+                      : "1px solid var(--border)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: 13,
-                    color: "#fff",
+                    color: "var(--txt4)",
                     flexShrink: 0,
+                    overflow: "hidden",
                   }}
                 >
                   {user.avatar_url ? (
@@ -525,16 +529,33 @@ class NavBar extends React.Component {
                       width: 28,
                       height: 28,
                       borderRadius: "50%",
-                      background: "var(--g1)",
+                      background: "var(--surface)",
+                      border: user.avatar_url
+                        ? "none"
+                        : "1px solid var(--border)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: 13,
-                      color: "#fff",
+                      color: "var(--txt4)",
                       flexShrink: 0,
+                      overflow: "hidden",
                     }}
                   >
-                    <i className="bi bi-person-fill" />
+                    {user.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt="avatar"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <i className="bi bi-person-fill" />
+                    )}
                   </div>
                   {(() => {
                     const badge = getUserBadge(user.total_points || 0);
