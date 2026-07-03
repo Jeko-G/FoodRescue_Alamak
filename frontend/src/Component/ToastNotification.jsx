@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import socket from "../utils/socket";
 import api from "../utils/api";
 import { useAuth } from "../Context/AuthContext";
+import { getActiveConversationId } from "../utils/activeConversation";
 
 const TOAST_ICONS = {
   donation_claimed: {
@@ -198,6 +199,7 @@ function ToastNotification() {
   const [toasts, setToasts] = useState([]);
   const lastCheckRef = useRef(new Date().toISOString());
   const shownIdsRef = useRef(new Set());
+  const shownSignaturesRef = useRef(new Map()); // key: "title|body" -> timestamp
 
   const addToast = useCallback((title, body, type) => {
     const id = ++toastId;
@@ -206,6 +208,29 @@ function ToastNotification() {
       return [...next, { id, title, body, type }];
     });
   }, []);
+
+  // Cegah toast yang sama (judul+isi sama) muncul 2x dalam waktu berdekatan,
+  // karena bisa datang dari 2 jalur berbeda (socket realtime + polling DB)
+  const addToastDeduped = useCallback(
+    (title, body, type) => {
+      const sig = body || title; // body lebih reliable, judul suka beda emoji antara versi socket & DB
+      const now = Date.now();
+      const lastShownAt = shownSignaturesRef.current.get(sig);
+
+      // Bersihkan signature lama (>20 detik) biar Map gak numpuk terus
+      for (const [key, ts] of shownSignaturesRef.current) {
+        if (now - ts > 20000) shownSignaturesRef.current.delete(key);
+      }
+
+      if (lastShownAt && now - lastShownAt < 20000) {
+        return; // sudah pernah ditampilkan barusan, skip
+      }
+
+      shownSignaturesRef.current.set(sig, now);
+      addToast(title, body, type);
+    },
+    [addToast],
+  );
 
   const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -233,7 +258,7 @@ function ToastNotification() {
         recent.forEach((n) => {
           shownIdsRef.current.add(n._id);
           if (n.type !== "new_message") {
-            addToast(n.title, n.body, n.type);
+            addToastDeduped(n.title, n.body, n.type);
           }
         });
         if (recent.length > 0) {
@@ -245,7 +270,14 @@ function ToastNotification() {
     pollNotifications();
     const pollInterval = setInterval(pollNotifications, 15000);
     const handleNewMessageNotify = (data) => {
-      addToast(
+      // Skip kalau user lagi buka percakapan ini juga (udah keliatan langsung di chat)
+      if (
+        data.conversationId &&
+        data.conversationId === getActiveConversationId()
+      ) {
+        return;
+      }
+      addToastDeduped(
         "Pesan Baru 💬",
         data.preview || "Ada pesan baru untukmu",
         "new_message",
@@ -253,7 +285,7 @@ function ToastNotification() {
     };
 
     const handlePushNotif = (data) => {
-      addToast(data.title, data.body, data.type);
+      addToastDeduped(data.title, data.body, data.type);
     };
 
     socket.off("new_message_notify", handleNewMessageNotify);
@@ -267,7 +299,7 @@ function ToastNotification() {
       socket.off("new_message_notify", handleNewMessageNotify);
       socket.off("push_notification", handlePushNotif);
     };
-  }, [user, addToast]);
+  }, [user, addToastDeduped]);
 
   if (toasts.length === 0) return null;
 

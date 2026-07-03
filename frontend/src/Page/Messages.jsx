@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../utils/api";
 import { useAuth } from "../Context/AuthContext";
 import socket from "../utils/socket";
+import { setActiveConversationId } from "../utils/activeConversation";
 
 function Messages() {
   const { user } = useAuth();
@@ -18,6 +19,13 @@ function Messages() {
   const prevMsgCountRef = useRef(0);
   const activeRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  // Kasih tau ToastNotification percakapan mana yang lagi kebuka,
+  // biar notif chat gak muncul dobel kalau usernya udah liat langsung.
+  useEffect(() => {
+    setActiveConversationId(active?._id || null);
+    return () => setActiveConversationId(null);
+  }, [active?._id]);
   const myTypingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
 
@@ -208,6 +216,19 @@ function Messages() {
     setOtherOnline(false);
     socket.emit("join_conversation", conv._id);
     fetchActive(conv._id);
+
+    // Update badge unread di sidebar langsung, gak nunggu round-trip API
+    const isProvider =
+      (conv.provider_id?._id || conv.provider_id) === (user?.id || user?._id);
+    setConversations((prev) =>
+      prev.map((c) =>
+        c._id === conv._id
+          ? isProvider
+            ? { ...c, provider_unread: 0 }
+            : { ...c, seeker_unread: 0 }
+          : c,
+      ),
+    );
   };
 
   // ── Kirim pesan ───────────────────────────────────────────────────

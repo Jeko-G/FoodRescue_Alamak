@@ -71,6 +71,13 @@ router.get("/:id", auth, async (req, res) => {
     else conversation.seeker_unread = 0;
     await conversation.save();
 
+    // Kasih tau NavBar/sidebar user ini biar badge unread langsung ke-update,
+    // gak nunggu polling interval
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`user_${req.user.id}`).emit("conversation_updated");
+    }
+
     res.json(conversation);
   } catch (err) {
     res.status(500).json({ msg: "Server error" });

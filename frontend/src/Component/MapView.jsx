@@ -23,12 +23,12 @@ function makeFoodIcon(emoji) {
     html: `
     <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 4px 8px rgba(95,139,76,0.45));">
       <div style="
-        width:36px;height:36px;border-radius:50% 50% 0 50%;transform:rotate(-45deg);
+        width:36px;height:36px;border-radius:50% 50% 0 50%;transform:rotate(45deg);
         background:linear-gradient(135deg,#5f8b4c,#7aaf60);
         border:3px solid #fff;
         display:flex;align-items:center;justify-content:center;
       ">
-        <span style="transform:rotate(45deg);font-size:15px;line-height:1;display:block;">${emoji || "🍱"}</span>
+        <span style="transform:rotate(-45deg);font-size:15px;line-height:1;display:block;">${emoji || "🍱"}</span>
       </div>
     </div>`,
     className: "",

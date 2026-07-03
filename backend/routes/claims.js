@@ -91,34 +91,36 @@ router.post("/", auth, async (req, res) => {
     const io = req.app.get("io");
 
     // Notif ke provider
+    const notifToProvider = {
+      title: "Donasi Diklaim! 🎉",
+      body: `Donasi "${donation.title}" diklaim sebanyak ${quantity_claimed} ${donation.quantity_unit}`,
+      type: "donation_claimed",
+    };
     await Notification.create({
       user_id: donation.provider_id,
-      type: "donation_claimed",
-      title: "Donasi Diklaim!",
-      body: `Donasi "${donation.title}" diklaim sebanyak ${quantity_claimed} ${donation.quantity_unit}`,
+      ...notifToProvider,
       reference_type: "claim",
       reference_id: claim._id,
     });
     io.emit("push_notification", {
-      title: "Donasi Diklaim! 🎉",
-      body: `Donasi "${donation.title}" diklaim sebanyak ${quantity_claimed} ${donation.quantity_unit}`,
-      type: "donation_claimed",
+      ...notifToProvider,
       for_user: donation.provider_id.toString(),
     });
 
     // Notif klaim berhasil ke seeker
+    const notifClaimSuccess = {
+      title: "Klaim Berhasil! ✅",
+      body: `Kamu berhasil mengklaim "${donation.title}" sebanyak ${quantity_claimed} ${donation.quantity_unit}. Tunggu konfirmasi dari provider.`,
+      type: "claim_confirmed",
+    };
     await Notification.create({
       user_id: req.user.id,
-      type: "claim_confirmed",
-      title: "Klaim Berhasil!",
-      body: `Kamu berhasil mengklaim "${donation.title}" sebanyak ${quantity_claimed} ${donation.quantity_unit}. Tunggu konfirmasi dari provider.`,
+      ...notifClaimSuccess,
       reference_type: "claim",
       reference_id: claim._id,
     });
     io.emit("push_notification", {
-      title: "Klaim Berhasil! ✅",
-      body: `Kamu berhasil mengklaim "${donation.title}"`,
-      type: "claim_confirmed",
+      ...notifClaimSuccess,
       for_user: req.user.id,
     });
 
@@ -126,18 +128,19 @@ router.post("/", auth, async (req, res) => {
     await User.findByIdAndUpdate(req.user.id, { $inc: { total_points: 10 } });
 
     // Notif +10 poin
-    await Notification.create({
-      user_id: req.user.id,
-      type: "claim_confirmed",
+    const notifPoin = {
       title: "⚡ +10 Poin!",
       body: `Kamu mendapat 10 poin dari klaim donasi "${donation.title}"!`,
+      type: "claim_confirmed",
+    };
+    await Notification.create({
+      user_id: req.user.id,
+      ...notifPoin,
       reference_type: "claim",
       reference_id: claim._id,
     });
     io.emit("push_notification", {
-      title: "⚡ +10 Poin!",
-      body: `Kamu mendapat 10 poin dari klaim donasi "${donation.title}"!`,
-      type: "claim_confirmed",
+      ...notifPoin,
       for_user: req.user.id,
     });
 

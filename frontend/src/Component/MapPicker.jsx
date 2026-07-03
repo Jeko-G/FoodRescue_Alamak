@@ -21,7 +21,7 @@ if (
 
 const pickupPinHTML = `
   <div style="position:relative;width:32px;height:40px;display:flex;justify-content:center">
-    <div style="width:32px;height:32px;border-radius:50% 50% 50% 4px;transform:rotate(45deg);background:#5f8b4c;border:2.5px solid #3d5e2e;box-shadow:0 4px 12px rgba(95,139,76,0.45)"></div>
+    <div style="width:32px;height:32px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:#5f8b4c;border:2.5px solid #3d5e2e;box-shadow:0 4px 12px rgba(95,139,76,0.45)"></div>
     <div style="position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;font-size:11px">📦</div>
   </div>
 `;

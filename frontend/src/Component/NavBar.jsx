@@ -288,7 +288,7 @@ class NavBar extends React.Component {
             </div>
           </Link>
           <div
-            className="d-none d-md-flex align-items-center justify-content-center"
+            className="d-none d-lg-flex align-items-center justify-content-center"
             style={{ gap: 20, minWidth: 0, overflow: "hidden" }}
           >
             {allLinks.map((link) => (
@@ -310,7 +310,7 @@ class NavBar extends React.Component {
             {user ? (
               <Link
                 to="/profile"
-                className="text-decoration-none d-none d-md-flex align-items-center gap-2"
+                className="text-decoration-none d-none d-lg-flex align-items-center gap-2"
                 style={{
                   padding: "6px 12px",
                   borderRadius: 10,
@@ -448,7 +448,7 @@ class NavBar extends React.Component {
             </button>
             {user && (
               <button
-                className="d-flex d-md-none theme-btn"
+                className="d-flex d-lg-none theme-btn"
                 onClick={() => this.setState({ menuOpen: !menuOpen })}
               >
                 <i
@@ -461,7 +461,7 @@ class NavBar extends React.Component {
         </div>
         {menuOpen && (
           <div
-            className="d-md-none"
+            className="d-lg-none"
             style={{
               borderTop: "1px solid var(--border)",
               background: "var(--surface)",
