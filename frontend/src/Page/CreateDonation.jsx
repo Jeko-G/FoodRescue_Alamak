@@ -130,8 +130,12 @@ function CreateDonation() {
     setPhotos(files);
   };
 
+  const isSubmittingRef = useRef(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return; // cegah double-submit super cepat
+    isSubmittingRef.current = true;
     setLoading(true);
     setMsg("");
     try {
@@ -147,6 +151,7 @@ function CreateDonation() {
       setTimeout(() => navigate("/donations"), 1500);
     } catch (err) {
       setMsg("error:" + (err.response?.data?.msg || "Gagal membuat donasi"));
+      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
     }
