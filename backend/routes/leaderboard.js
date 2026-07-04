@@ -33,6 +33,7 @@ router.get("/", async (req, res) => {
       is_active: true,
       is_profile_complete: true,
       total_points: { $gt: 0 },
+      role: { $ne: "admin" },
     };
 
     if (type === "city" && city) {
@@ -75,6 +76,7 @@ router.get("/me", auth, async (req, res) => {
         total_points: { $gt: user.total_points },
         is_active: true,
         is_profile_complete: true,
+        role: { $ne: "admin" },
       })) + 1;
 
     // Ranking kota
@@ -84,6 +86,7 @@ router.get("/me", auth, async (req, res) => {
           city: user.city,
           is_active: true,
           is_profile_complete: true,
+          role: { $ne: "admin" },
         })) + 1
       : null;
 

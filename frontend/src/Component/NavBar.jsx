@@ -389,7 +389,7 @@ class NavBar extends React.Component {
                             {badge.emoji}
                           </span>
                         )}
-                        {user.first_name} {user.last_name}
+                        {user.first_name}
                       </span>
                     );
                   })()}
@@ -573,7 +573,7 @@ class NavBar extends React.Component {
                             {badge.emoji}
                           </span>
                         )}
-                        {user.first_name} {user.last_name}
+                        {user.first_name}
                       </span>
                     );
                   })()}

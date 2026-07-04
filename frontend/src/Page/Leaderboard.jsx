@@ -85,7 +85,8 @@ class Leaderboard extends React.Component {
             width: 38,
             height: 38,
             borderRadius: "50%",
-            background: "var(--g1)",
+            background: "var(--surface)",
+            border: user.avatar_url ? "none" : "1px solid var(--border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -102,7 +103,7 @@ class Leaderboard extends React.Component {
           ) : (
             <i
               className="bi bi-person-fill"
-              style={{ color: "#fff", fontSize: 18 }}
+              style={{ color: "var(--txt4)", fontSize: 18 }}
             />
           )}
         </div>
@@ -175,8 +176,8 @@ class Leaderboard extends React.Component {
           Pengguna FoodRescue paling aktif
         </p>
 
-        {/* My Rank Card */}
-        {myRank && myBadge && (
+        {/* My Rank Card (bukan buat admin, gak ada ranking gamifikasi buat admin) */}
+        {this.context?.user?.role !== "admin" && myRank && myBadge && (
           <div
             style={{
               background:
